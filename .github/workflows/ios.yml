@@ -1,0 +1,89 @@
+# iOS in der Cloud bauen — auf echten Apple-Macs bei GitHub, ohne eigenen Mac.
+#
+# Läuft automatisch bei jedem Push und lässt sich unter "Actions" auch manuell starten.
+# Erzeugt zwei Artefakte zum Herunterladen:
+#   1. ios-app-unsigned  — die gebaute App (unsigniert; Beweis, dass iOS kompiliert)
+#   2. ios-simulator-screenshot — die App im iPhone-Simulator, als PNG
+#
+# Für die Installation auf einem ECHTEN iPhone ist zusätzlich eine Apple-Signierung
+# nötig (Apple Developer Account). Siehe unten den optionalen Signierungs-Block.
+
+name: iOS Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch: {} # Knopf zum manuellen Starten in der Actions-Oberfläche
+
+jobs:
+  build-ios:
+    runs-on: macos-14 # echter Apple-Mac in der Cloud
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Flutter einrichten
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Pakete holen
+        run: flutter pub get
+
+      - name: Tests
+        run: flutter test
+
+      # Baut die iOS-App ohne Signierung — beweist, dass alles auf iOS kompiliert.
+      - name: iOS bauen (unsigniert)
+        run: flutter build ios --release --no-codesign
+
+      - name: App als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-unsigned
+          path: build/ios/iphoneos/Runner.app
+
+      # --- Beweis, dass sie auf iOS läuft: im Simulator starten + Screenshot ---
+      - name: iPhone-Simulator booten
+        run: |
+          xcrun simctl boot "iPhone 15 Pro" || true
+          sleep 5
+
+      - name: App im Simulator starten
+        run: |
+          flutter build ios --simulator --debug
+          xcrun simctl install booted build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch booted com.terraspot.terraspot
+          sleep 15
+
+      - name: Screenshot aufnehmen
+        run: xcrun simctl io booted screenshot ios-screenshot.png
+
+      - name: Screenshot hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-screenshot
+          path: ios-screenshot.png
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: Signierte .ipa für ein echtes iPhone / TestFlight.
+  # Nur aktiv, wenn die Apple-Secrets im Repo hinterlegt sind. Ohne sie wird der
+  # Job übersprungen — der obige unsignierte Build läuft trotzdem.
+  # Benötigte Secrets (Repo → Settings → Secrets → Actions):
+  #   BUILD_CERTIFICATE_BASE64, P12_PASSWORD, PROVISIONING_PROFILE_BASE64,
+  #   APPLE_TEAM_ID  (alles aus dem Apple Developer Account)
+  # ---------------------------------------------------------------------------
+  build-ipa-signed:
+    runs-on: macos-14
+    if: ${{ false }} # auf true setzen, sobald die Apple-Secrets hinterlegt sind
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - name: Signierte IPA bauen
+        run: flutter build ipa --export-options-plist=ios/ExportOptions.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-signed
+          path: build/ios/ipa/*.ipa

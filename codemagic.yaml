@@ -1,0 +1,39 @@
+# Cloud-Build für TerraSpot — baut Android und iOS ohne eigenen Mac.
+# Anleitung: Repo bei codemagic.io verbinden, dann den passenden Workflow starten.
+
+workflows:
+  android:
+    name: TerraSpot Android
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    scripts:
+      - name: Pakete holen
+        script: flutter pub get
+      - name: Tests
+        script: flutter test
+      - name: APK bauen
+        script: flutter build apk --release
+    artifacts:
+      - build/**/outputs/**/*.apk
+
+  ios:
+    name: TerraSpot iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Pakete holen
+        script: flutter pub get
+      - name: CocoaPods
+        script: cd ios && pod install
+      # --no-codesign: baut ohne Signierung (zum Prüfen). Für TestFlight/Store
+      # die Signierung in Codemagic hinterlegen und dieses Flag entfernen.
+      - name: iOS bauen
+        script: flutter build ios --release --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
