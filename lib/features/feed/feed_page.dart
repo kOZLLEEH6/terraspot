@@ -30,7 +30,7 @@ class _FeedPageState extends State<FeedPage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final all = state.allSpots;
+    final all = state.moderatedSpots;
 
     final today = [...all]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final trending = [...all]..sort((a, b) => b.likes.compareTo(a.likes));

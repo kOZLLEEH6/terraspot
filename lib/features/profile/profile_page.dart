@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme.dart';
+import '../owner/owner_panel_page.dart';
 import '../pro/collections_page.dart';
 import '../pro/paywall_page.dart';
+import '../pro/redeem_code_page.dart';
 import '../pro/trip_planner_page.dart';
 import '../search/search_page.dart';
 
@@ -37,11 +39,27 @@ class ProfilePage extends StatelessWidget {
           _LevelCard(state: state),
           const SizedBox(height: 20),
 
+          if (state.isOwner) ...[
+            _OwnerCard(),
+            const SizedBox(height: 20),
+          ],
+
           if (!state.isPro) ...[
             _ProUpsell(),
+            const SizedBox(height: 12),
+            _RedeemRow(),
             const SizedBox(height: 20),
           ] else ...[
             _ProTools(),
+            if (state.proRemainingLabel != null) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  'PRO über Code — ${state.proRemainingLabel}',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.proGold),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
           ],
 
@@ -91,11 +109,50 @@ class ProfilePage extends StatelessWidget {
             for (final s in state.mySpots)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: SpotListTile(spot: s),
+                child: SpotListTile(
+                  spot: s,
+                  trailing: IconButton(
+                    tooltip: 'Löschen',
+                    onPressed: () => _confirmDelete(context, state, s.id, s.title),
+                    icon: const Icon(Icons.delete_outline,
+                        size: 20, color: Color(0xFFFF6B6B)),
+                  ),
+                ),
               ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, AppState state, String id, String title) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Spot löschen?'),
+        content: Text('„$title" wird dauerhaft entfernt.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF6B6B)),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await state.deleteSpot(id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Spot gelöscht')),
+        );
+      }
+    }
   }
 }
 
@@ -137,11 +194,40 @@ class _Header extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      state.currentUserName,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                    Flexible(
+                      child: Text(
+                        state.currentUserName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                      ),
                     ),
-                    if (state.isPro) ...[
+                    if (state.isOwner) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.proGold, AppTheme.accent],
+                          ),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shield, size: 9, color: Colors.black),
+                            SizedBox(width: 3),
+                            Text(
+                              'OWNER',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else if (state.isPro) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -324,6 +410,91 @@ class _ProUpsell extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right, color: AppTheme.proGold),
+            ],
+          ),
+        ),
+      );
+}
+
+/// Owner-Einstieg — nur für dich sichtbar.
+class _OwnerCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final reports = context.watch<AppState>().openReports.length;
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const OwnerPanelPage()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.accent.withValues(alpha: 0.18),
+              AppTheme.proGold.withValues(alpha: 0.12),
+            ],
+          ),
+          border: Border.all(color: AppTheme.proGold.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.shield, color: AppTheme.proGold, size: 24),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Owner-Bereich',
+                      style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
+                  SizedBox(height: 2),
+                  Text('Gift-Codes, Meldungen, Nutzer sperren',
+                      style: TextStyle(fontSize: 12.5, color: AppTheme.textMuted)),
+                ],
+              ),
+            ),
+            if (reports > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFF6B6B),
+                  shape: BoxShape.circle,
+                ),
+                child: Text('$reports',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800)),
+              ),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right, color: AppTheme.proGold),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Hast du einen Code?" — für Nutzer ohne PRO.
+class _RedeemRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: () => RedeemCodeSheet.show(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              const Text('🎁', style: TextStyle(fontSize: 17)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text('Ich habe einen Gutschein-Code',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              const Icon(Icons.chevron_right, color: AppTheme.textMuted),
             ],
           ),
         ),

@@ -8,6 +8,11 @@ import '../core/models/spot.dart';
 
 /// Zeigt ein Spot-Foto. Fällt auf einen Kategorie-Farbverlauf mit Emoji zurück,
 /// wenn das Bild fehlt — so sieht die UI nie kaputt aus, sondern absichtlich.
+///
+/// Wichtig fürs Handy: jedes Bild wird nur in der Größe dekodiert, in der es
+/// auch angezeigt wird (`cacheWidth`). Ohne das dekodiert Flutter jedes 640px-
+/// Asset in voller Auflösung in den RAM — in Listen mit vielen Fotos führt das
+/// schnell zu Speicherdruck und Hängern.
 class SpotPhoto extends StatelessWidget {
   const SpotPhoto({
     super.key,
@@ -22,36 +27,40 @@ class SpotPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Selbst erstellte Spots haben ein lokales Foto (Datei bzw. Blob-URL im Web).
-    final local = spot.localPhotoPath;
-    if (local != null && index == 0) {
-      final image = kIsWeb ? Image.network(local, fit: fit) : Image.file(File(local), fit: fit);
-      return _Frame(spot: spot, child: image);
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Zielbreite in echten Pixeln: Layoutbreite × Pixeldichte.
+        final dpr = MediaQuery.of(context).devicePixelRatio;
+        final w = constraints.maxWidth.isFinite ? constraints.maxWidth : 640;
+        final cacheWidth = (w * dpr).clamp(64, 1280).round();
 
-    if (index >= spot.photoUrls.length) {
-      return _Fallback(category: spot.category);
-    }
+        // Selbst erstellte Spots haben ein lokales Foto (Datei bzw. Blob-URL im Web).
+        final local = spot.localPhotoPath;
+        if (local != null && index == 0) {
+          final image = kIsWeb
+              ? Image.network(local, fit: fit, cacheWidth: cacheWidth,
+                  errorBuilder: (_, _, _) => _Fallback(category: spot.category))
+              : Image.file(File(local), fit: fit, cacheWidth: cacheWidth,
+                  errorBuilder: (_, _, _) => _Fallback(category: spot.category));
+          return SizedBox.expand(child: image);
+        }
 
-    return _Frame(
-      spot: spot,
-      child: Image.asset(
-        spot.photoUrls[index],
-        fit: fit,
-        errorBuilder: (_, _, _) => _Fallback(category: spot.category),
-      ),
+        if (index >= spot.photoUrls.length) {
+          return _Fallback(category: spot.category);
+        }
+
+        return SizedBox.expand(
+          child: Image.asset(
+            spot.photoUrls[index],
+            fit: fit,
+            cacheWidth: cacheWidth,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => _Fallback(category: spot.category),
+          ),
+        );
+      },
     );
   }
-}
-
-class _Frame extends StatelessWidget {
-  const _Frame({required this.spot, required this.child});
-
-  final Spot spot;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => SizedBox.expand(child: child);
 }
 
 class _Fallback extends StatelessWidget {

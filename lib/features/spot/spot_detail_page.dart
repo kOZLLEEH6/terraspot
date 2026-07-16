@@ -5,9 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/spot.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme.dart';
-import '../../widgets/spot_photo.dart';
+import '../../widgets/photo_gallery.dart';
+import '../../widgets/spot_photo.dart' show PhotoScrim;
 import '../pro/paywall_page.dart';
 import '../pro/spot_intelligence_panel.dart';
+import 'spot_actions.dart';
 
 /// Der vollständige Outdoor-Guide zu einem Spot — genau die Fragen, die
 /// Instagram offen lässt: wann, wie lange, wie schwer, wie komme ich hin.
@@ -80,16 +82,6 @@ class SpotDetailPage extends StatelessWidget {
                     ),
                   ),
 
-                  if (spot.photoUrls.length > 1) ...[
-                    const SizedBox(height: 28),
-                    const Text(
-                      'Weitere Bilder',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 12),
-                    _Gallery(spot: spot),
-                  ],
-
                   const SizedBox(height: 24),
                   _AuthorRow(spot: spot),
                 ],
@@ -121,8 +113,8 @@ class _PhotoHeader extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            SpotPhoto(spot: spot),
-            const PhotoScrim(),
+            PhotoGallery(spot: spot),
+            IgnorePointer(child: const PhotoScrim(opacity: 0.6)),
             Positioned(
               left: 16,
               right: 16,
@@ -194,7 +186,8 @@ class _PhotoHeader extends StatelessWidget {
             }
           },
         ),
-        const SizedBox(width: 8),
+        SpotActionsButton(spot: spot),
+        const SizedBox(width: 4),
       ],
     );
   }
@@ -490,29 +483,6 @@ class _GpsRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      );
-}
-
-class _Gallery extends StatelessWidget {
-  const _Gallery({required this.spot});
-
-  final Spot spot;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: 130,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: spot.photoUrls.length - 1,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
-          itemBuilder: (_, i) => ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: 180,
-              child: SpotPhoto(spot: spot, index: i + 1),
-            ),
-          ),
         ),
       );
 }

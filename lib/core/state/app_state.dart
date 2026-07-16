@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,9 +20,15 @@ class AppState extends ChangeNotifier {
   AppState._(this._repo, this._prefs);
 
   static const _kPro = 'is_pro';
+  static const _kProUntil = 'pro_until';
+  static const _kGiftCodes = 'gift_codes';
 
   /// Free-Tier: bis zu 20 gespeicherte Orte (aus dem Konzept).
   static const freeSaveLimit = 20;
+
+  /// Der Owner der App (das bist du). Sieht Meldungen, kann sperren und
+  /// Gift-Codes erzeugen. Im Mock-Modus ist der eingeloggte Nutzer der Owner.
+  static const ownerName = MockSpotRepository.defaultUserName;
 
   final SpotRepository _repo;
   final SharedPreferences _prefs;
@@ -28,8 +37,13 @@ class AppState extends ChangeNotifier {
   List<Spot> _spots = [];
   Set<String> _liked = {};
   Set<String> _saved = {};
+  Set<String> _blockedSpots = {};
+  Set<String> _blockedUsers = {};
+  List<SpotReport> _reports = [];
   SpotFilters _filters = const SpotFilters();
   bool _isPro = false;
+  DateTime? _proUntil;
+  List<GiftCode> _giftCodes = [];
   bool _loading = true;
 
   static Future<AppState> create() async {
@@ -61,7 +75,21 @@ class AppState extends ChangeNotifier {
     _spots = await _repo.all();
     _liked = await _repo.likedIds();
     _saved = await _repo.savedIds();
+    _blockedSpots = await _repo.blockedSpotIds();
+    _blockedUsers = await _repo.blockedUserNames();
+    _reports = await _repo.openReports();
     _isPro = _prefs.getBool(_kPro) ?? false;
+
+    final until = _prefs.getString(_kProUntil);
+    _proUntil = until == null ? null : DateTime.tryParse(until);
+
+    _giftCodes = [];
+    for (final c in _prefs.getStringList(_kGiftCodes) ?? const []) {
+      try {
+        _giftCodes.add(GiftCode.fromJson(jsonDecode(c) as Map<String, dynamic>));
+      } catch (_) {}
+    }
+
     _loading = false;
     notifyListeners();
   }
@@ -69,13 +97,46 @@ class AppState extends ChangeNotifier {
   // --- Lesen ---
 
   bool get loading => _loading;
-  bool get isPro => _isPro;
+
+  /// Bist du der Owner? Schaltet Moderation und Gift-Code-Erzeugung frei.
+  bool get isOwner => currentUserName == ownerName;
+
+  /// PRO ist aktiv, wenn manuell freigeschaltet ODER ein Gift-Code noch läuft.
+  /// Der Owner hat immer PRO.
+  bool get isPro =>
+      isOwner || _isPro || (_proUntil != null && _proUntil!.isAfter(DateTime.now()));
+
+  DateTime? get proUntil => _proUntil;
+
+  /// Verbleibende PRO-Zeit als Text, falls über einen Code freigeschaltet.
+  String? get proRemainingLabel {
+    if (_proUntil == null || !_proUntil!.isAfter(DateTime.now())) return null;
+    final days = _proUntil!.difference(DateTime.now()).inDays;
+    if (days >= 60) return 'noch ${(days / 30).round()} Monate';
+    if (days >= 1) return 'noch $days Tage';
+    return 'läuft heute ab';
+  }
+
+  List<GiftCode> get giftCodes => List.unmodifiable(_giftCodes);
+  List<SpotReport> get openReports => List.unmodifiable(_reports);
+  Set<String> get blockedUsers => Set.of(_blockedUsers);
+  Set<String> get blockedSpots => Set.of(_blockedSpots);
+
   List<Spot> get allSpots => _spots;
   SpotFilters get filters => _filters;
   Set<String> get savedIds => _saved;
 
+  /// Ist ein Spot für normale Nutzer sichtbar? Gesperrte Spots und Spots
+  /// gesperrter Nutzer verschwinden — nur der Owner sieht sie weiterhin.
+  bool _isModerationVisible(Spot s) =>
+      isOwner || (!_blockedSpots.contains(s.id) && !_blockedUsers.contains(s.authorName));
+
   /// Die Spots, die aktuell auf der Karte und in der Liste erscheinen.
-  List<Spot> get visibleSpots => _spots.where(_filters.matches).toList();
+  List<Spot> get visibleSpots =>
+      _spots.where((s) => _isModerationVisible(s) && _filters.matches(s)).toList();
+
+  /// Alle sichtbaren Spots ohne Filter (für Feed/Collections).
+  List<Spot> get moderatedSpots => _spots.where(_isModerationVisible).toList();
 
   List<Spot> get savedSpots => _spots.where((s) => _saved.contains(s.id)).toList();
 
@@ -85,9 +146,16 @@ class AppState extends ChangeNotifier {
   List<Spot> get mySpots =>
       _spots.where((s) => s.authorName == currentUserName).toList();
 
+  bool get isSpotBlocked => false; // (nur für Klarheit; Einzelabfrage unten)
+  bool spotBlocked(String id) => _blockedSpots.contains(id);
+  bool userBlocked(String name) => _blockedUsers.contains(name);
+
+  /// Darf der aktuelle Nutzer diesen Spot löschen? (Autor oder Owner.)
+  bool canDelete(Spot s) => isOwner || s.authorName == currentUserName;
+
   /// Hidden Gems sind ein PRO-Feature — im Free-Tier bleiben sie verborgen.
   List<Spot> get hiddenGems =>
-      isPro ? _spots.where((s) => s.isHiddenGem).toList() : const [];
+      isPro ? moderatedSpots.where((s) => s.isHiddenGem).toList() : const [];
 
   bool isLiked(String id) => _liked.contains(id);
   bool isSaved(String id) => _saved.contains(id);
@@ -157,10 +225,109 @@ class AppState extends ChangeNotifier {
     return created;
   }
 
+  /// Löscht einen Spot (Autor oder Owner).
+  Future<void> deleteSpot(String id) async {
+    await _repo.delete(id);
+    _spots = await _repo.all();
+    _saved = await _repo.savedIds();
+    _liked = await _repo.likedIds();
+    _reports = await _repo.openReports();
+    notifyListeners();
+  }
+
   Future<void> setPro(bool value) async {
     _isPro = value;
     await _prefs.setBool(_kPro, value);
     notifyListeners();
+  }
+
+  // --- Moderation ---
+
+  Future<void> reportSpot(String id, String reason) async {
+    await _repo.report(id, reason, currentUserName);
+    _reports = await _repo.openReports();
+    notifyListeners();
+  }
+
+  Future<void> setSpotBlocked(String id, bool blocked) async {
+    await _repo.setSpotBlocked(id, blocked);
+    _blockedSpots = await _repo.blockedSpotIds();
+    _reports = await _repo.openReports();
+    notifyListeners();
+  }
+
+  Future<void> setUserBlocked(String userName, bool blocked) async {
+    await _repo.setUserBlocked(userName, blocked);
+    _blockedUsers = await _repo.blockedUserNames();
+    notifyListeners();
+  }
+
+  Future<void> dismissReport(String reportId) async {
+    await _repo.dismissReport(reportId);
+    _reports = await _repo.openReports();
+    notifyListeners();
+  }
+
+  /// Spot zu einer Meldung nachschlagen (für die Owner-Übersicht).
+  Spot? reportedSpot(SpotReport r) => spotById(r.spotId);
+
+  // --- PRO / Gift-Codes ---
+
+  /// Owner erzeugt einen Code, der PRO für [months] Monate freischaltet.
+  Future<GiftCode> generateGiftCode(int months) async {
+    final code = _randomCode();
+    final gc = GiftCode(code: code, months: months, createdAt: DateTime.now());
+    _giftCodes = [gc, ..._giftCodes];
+    await _persistGiftCodes();
+    notifyListeners();
+    return gc;
+  }
+
+  Future<void> deleteGiftCode(String code) async {
+    _giftCodes = _giftCodes.where((c) => c.code != code).toList();
+    await _persistGiftCodes();
+    notifyListeners();
+  }
+
+  /// Löst einen Code ein und verlängert PRO um die enthaltenen Monate.
+  RedeemResult redeemCode(String rawCode) {
+    final code = rawCode.trim().toUpperCase().replaceAll(' ', '');
+    if (code.isEmpty) return RedeemResult.invalid;
+
+    final index = _giftCodes.indexWhere((c) => c.code == code);
+    if (index == -1) return RedeemResult.invalid;
+    if (_giftCodes[index].redeemed) return RedeemResult.alreadyUsed;
+
+    final gc = _giftCodes[index];
+    _giftCodes[index] = gc.markRedeemed();
+
+    // Ab jetzt (oder ab bestehendem Ablauf) um die Monate verlängern.
+    final base = (_proUntil != null && _proUntil!.isAfter(DateTime.now()))
+        ? _proUntil!
+        : DateTime.now();
+    _proUntil = DateTime(base.year, base.month + gc.months, base.day,
+        base.hour, base.minute);
+
+    _persistGiftCodes();
+    _prefs.setString(_kProUntil, _proUntil!.toIso8601String());
+    notifyListeners();
+    return RedeemResult.success;
+  }
+
+  Future<void> _persistGiftCodes() async {
+    await _prefs.setStringList(
+      _kGiftCodes,
+      _giftCodes.map((c) => jsonEncode(c.toJson())).toList(),
+    );
+  }
+
+  static String _randomCode() {
+    // Verwechslungsfreie Zeichen (kein 0/O, 1/I). Format: TERRA-XXXX-XXXX.
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final r = Random.secure();
+    String block() =>
+        List.generate(4, (_) => chars[r.nextInt(chars.length)]).join();
+    return 'TERRA-${block()}-${block()}';
   }
 
   // --- Gamification ---
@@ -240,6 +407,51 @@ class AppState extends ChangeNotifier {
       ),
     ];
   }
+}
+
+enum RedeemResult { success, invalid, alreadyUsed }
+
+/// Ein vom Owner erzeugter Code, der PRO für eine Anzahl Monate freischaltet.
+class GiftCode {
+  const GiftCode({
+    required this.code,
+    required this.months,
+    required this.createdAt,
+    this.redeemed = false,
+    this.redeemedAt,
+  });
+
+  final String code;
+  final int months;
+  final DateTime createdAt;
+  final bool redeemed;
+  final DateTime? redeemedAt;
+
+  GiftCode markRedeemed() => GiftCode(
+        code: code,
+        months: months,
+        createdAt: createdAt,
+        redeemed: true,
+        redeemedAt: DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'months': months,
+        'createdAt': createdAt.toIso8601String(),
+        'redeemed': redeemed,
+        'redeemedAt': redeemedAt?.toIso8601String(),
+      };
+
+  factory GiftCode.fromJson(Map<String, dynamic> j) => GiftCode(
+        code: j['code'] as String,
+        months: j['months'] as int,
+        createdAt: DateTime.parse(j['createdAt'] as String),
+        redeemed: (j['redeemed'] as bool?) ?? false,
+        redeemedAt: j['redeemedAt'] == null
+            ? null
+            : DateTime.parse(j['redeemedAt'] as String),
+      );
 }
 
 /// Heißt nicht `Badge` — das ist bereits ein Material-Widget.

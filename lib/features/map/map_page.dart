@@ -88,11 +88,21 @@ class _MapPageState extends State<MapPage> {
             options: MapOptions(
               initialCenter: const LatLng(46.8, 9.5), // Alpen — dort ist die Dichte am höchsten
               initialZoom: _zoom,
-              minZoom: 2,
+              minZoom: 2.4,
               maxZoom: 17,
+              // Hält die Kamera innerhalb der Weltkarte (Web-Mercator endet bei ±85°).
+              // Damit gibt es beim Rauszoomen keine grauen Balken über/unter der Karte.
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(-85.05, -180),
+                  const LatLng(85.05, 180),
+                ),
+              ),
               onTap: (_, _) => setState(() => _selected = null),
               onPositionChanged: (pos, _) {
-                if ((pos.zoom - _zoom).abs() > 0.05) {
+                // Nur bei spürbaren Zoomsprüngen neu clustern — sonst rechnet die
+                // Karte während einer Pinch-Geste bei jedem Frame neu.
+                if ((pos.zoom - _zoom).abs() > 0.2) {
                   setState(() => _zoom = pos.zoom);
                 }
               },
@@ -424,10 +434,28 @@ class _TopBar extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🌍', style: TextStyle(fontSize: 16)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(7),
+                  child: Image.asset(
+                    'assets/branding/icon.png',
+                    width: 24,
+                    height: 24,
+                    cacheWidth: 72,
+                  ),
+                ),
                 const SizedBox(width: 8),
+                const Text(
+                  'TerraSpot',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                ),
+                Container(
+                  width: 1,
+                  height: 14,
+                  margin: const EdgeInsets.symmetric(horizontal: 9),
+                  color: AppTheme.textMuted.withValues(alpha: 0.3),
+                ),
                 Text(
-                  '$spotCount ${spotCount == 1 ? 'Spot' : 'Spots'}',
+                  '$spotCount',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 if (filters.activeCount > 0) ...[

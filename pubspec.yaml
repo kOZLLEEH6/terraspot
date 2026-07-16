@@ -43,8 +43,25 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Generiert die App-Icons für alle Plattformen aus einem Bild.
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/photos/
+    - assets/branding/
+
+# App-Icon: modernes Kiefer-Motiv (siehe assets/branding/icon.png).
+# Neu generieren mit: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/branding/icon.png"
+  android: true
+  adaptive_icon_background: "#0C2E22"
+  adaptive_icon_foreground: "assets/branding/icon_foreground.png"
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    background_color: "#0C2E22"
+    theme_color: "#2DD4BF"

@@ -228,7 +228,7 @@ class _SearchPageState extends State<SearchPage> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            _CountryGrid(spots: state.allSpots),
+            _CountryGrid(spots: state.moderatedSpots),
           ] else ...[
             Row(
               children: [

@@ -83,6 +83,10 @@ class Spot {
 
   bool get isInSeason => bestMonths.contains(DateTime.now().month);
 
+  /// Anzahl der anzeigbaren Fotos. Selbst erstellte Spots haben ein lokales
+  /// Foto, kuratierte Spots mehrere Netzwerk-/Asset-Fotos.
+  int get photoCount => localPhotoPath != null ? 1 : photoUrls.length;
+
   String get seasonLabel {
     if (bestMonths.isEmpty) return 'ganzjährig';
     const names = [

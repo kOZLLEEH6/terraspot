@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:terraspot/core/data/mock_data.dart';
+import 'package:terraspot/core/data/spot_repository.dart';
 import 'package:terraspot/core/models/category.dart';
 import 'package:terraspot/core/models/filters.dart';
 import 'package:terraspot/core/services/nl_search_service.dart';
@@ -8,6 +9,7 @@ import 'package:terraspot/core/services/score_service.dart';
 import 'package:terraspot/core/services/sun_service.dart';
 import 'package:terraspot/core/services/trip_planner.dart';
 import 'package:terraspot/core/services/weather_service.dart';
+import 'package:terraspot/core/state/app_state.dart';
 
 void main() {
   group('SunService', () {
@@ -248,6 +250,49 @@ void main() {
 
       expect(gems, isNotEmpty);
       expect(gems.length, lessThan(spots.length ~/ 2));
+    });
+
+    test('photoCount stimmt für kuratierte Spots', () {
+      // Kuratierte Spots haben kein lokales Foto -> Anzahl = photoUrls.
+      for (final s in spots) {
+        expect(s.photoCount, s.photoUrls.length, reason: s.title);
+        expect(s.photoCount, greaterThan(0), reason: s.title);
+      }
+    });
+  });
+
+  group('GiftCode', () {
+    test('JSON-Roundtrip erhält alle Felder', () {
+      final gc = GiftCode(
+        code: 'TERRA-ABCD-EFGH',
+        months: 3,
+        createdAt: DateTime(2026, 1, 1),
+      ).markRedeemed();
+
+      final back = GiftCode.fromJson(gc.toJson());
+      expect(back.code, 'TERRA-ABCD-EFGH');
+      expect(back.months, 3);
+      expect(back.redeemed, isTrue);
+      expect(back.redeemedAt, isNotNull);
+    });
+  });
+
+  group('SpotReport', () {
+    test('JSON-Roundtrip erhält alle Felder', () {
+      final r = SpotReport(
+        id: 'r_1',
+        spotId: 'seceda',
+        reason: 'Spam',
+        reporter: 'Tester',
+        createdAt: DateTime(2026, 2, 3, 12, 30),
+      );
+
+      final back = SpotReport.fromJson(r.toJson());
+      expect(back.id, 'r_1');
+      expect(back.spotId, 'seceda');
+      expect(back.reason, 'Spam');
+      expect(back.reporter, 'Tester');
+      expect(back.createdAt, DateTime(2026, 2, 3, 12, 30));
     });
   });
 }

@@ -171,6 +171,45 @@ class SupabaseSpotRepository implements SpotRepository {
     return _fromRow(inserted);
   }
 
+  @override
+  Future<void> delete(String spotId) async {
+    // RLS lässt nur den Autor löschen (siehe 002_rls.sql).
+    await _client.from('spots').delete().eq('id', spotId);
+  }
+
+  // --- Moderation ---
+  // Für den MVP schlank gehalten: Meldungen landen in einer Tabelle `reports`,
+  // die eigentliche Owner-Moderation (Sperren) läuft aktuell nur im Mock-Modus.
+  // Beim Aktivieren von Supabase kommen dafür Admin-Policies + eine `blocks`-Tabelle
+  // dazu — die Signaturen hier bleiben gleich.
+
+  @override
+  Future<void> report(String spotId, String reason, String reporter) async {
+    await _client.from('reports').insert({
+      'spot_id': spotId,
+      'reason': reason,
+      'reporter': reporter,
+    });
+  }
+
+  @override
+  Future<List<SpotReport>> openReports() async => const [];
+
+  @override
+  Future<void> dismissReport(String reportId) async {}
+
+  @override
+  Future<void> setSpotBlocked(String spotId, bool blocked) async {}
+
+  @override
+  Future<Set<String>> blockedSpotIds() async => const {};
+
+  @override
+  Future<void> setUserBlocked(String userName, bool blocked) async {}
+
+  @override
+  Future<Set<String>> blockedUserNames() async => const {};
+
   // --- Likes ---
 
   @override

@@ -120,7 +120,7 @@ class CollectionsPage extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, i) {
           final c = collections[i];
-          final spots = c.resolve(state.allSpots);
+          final spots = c.resolve(state.moderatedSpots);
 
           return GestureDetector(
             onTap: () {
@@ -200,7 +200,7 @@ class _CollectionDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spots = collection.resolve(context.watch<AppState>().allSpots);
+    final spots = collection.resolve(context.watch<AppState>().moderatedSpots);
 
     return Scaffold(
       appBar: AppBar(title: Text('${collection.emoji} ${collection.title}')),
