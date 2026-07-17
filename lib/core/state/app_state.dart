@@ -19,9 +19,18 @@ import '../services/weather_service.dart';
 class AppState extends ChangeNotifier {
   AppState._(this._repo, this._prefs);
 
-  static const _kPro = 'is_pro';
   static const _kProUntil = 'pro_until';
+  static const _kAutoRenew = 'pro_auto_renew';
   static const _kGiftCodes = 'gift_codes';
+  static const _kTermsVersion = 'accepted_terms_version';
+  static const _kTermsAcceptedAt = 'accepted_terms_at';
+
+  /// Version der akzeptierten Bedingungen. Erhöhen, wenn sich die AGB/Datenschutz-
+  /// Texte inhaltlich ändern — dann muss der Nutzer erneut zustimmen.
+  static const currentTermsVersion = 1;
+
+  /// Preis des PRO-Abos (nur Anzeige; die echte Abrechnung macht der Store).
+  static const proPriceLabel = '9,99 €/Monat';
 
   /// Free-Tier: bis zu 20 gespeicherte Orte (aus dem Konzept).
   static const freeSaveLimit = 20;
@@ -41,9 +50,11 @@ class AppState extends ChangeNotifier {
   Set<String> _blockedUsers = {};
   List<SpotReport> _reports = [];
   SpotFilters _filters = const SpotFilters();
-  bool _isPro = false;
   DateTime? _proUntil;
+  bool _autoRenew = false;
   List<GiftCode> _giftCodes = [];
+  bool _termsAccepted = false;
+  DateTime? _termsAcceptedAt;
   bool _loading = true;
 
   static Future<AppState> create() async {
@@ -78,10 +89,14 @@ class AppState extends ChangeNotifier {
     _blockedSpots = await _repo.blockedSpotIds();
     _blockedUsers = await _repo.blockedUserNames();
     _reports = await _repo.openReports();
-    _isPro = _prefs.getBool(_kPro) ?? false;
+    _termsAccepted =
+        (_prefs.getInt(_kTermsVersion) ?? 0) >= currentTermsVersion;
+    final acceptedAt = _prefs.getString(_kTermsAcceptedAt);
+    _termsAcceptedAt = acceptedAt == null ? null : DateTime.tryParse(acceptedAt);
 
     final until = _prefs.getString(_kProUntil);
     _proUntil = until == null ? null : DateTime.tryParse(until);
+    _autoRenew = _prefs.getBool(_kAutoRenew) ?? false;
 
     _giftCodes = [];
     for (final c in _prefs.getStringList(_kGiftCodes) ?? const []) {
@@ -101,20 +116,34 @@ class AppState extends ChangeNotifier {
   /// Bist du der Owner? Schaltet Moderation und Gift-Code-Erzeugung frei.
   bool get isOwner => currentUserName == ownerName;
 
-  /// PRO ist aktiv, wenn manuell freigeschaltet ODER ein Gift-Code noch läuft.
-  /// Der Owner hat immer PRO.
-  bool get isPro =>
-      isOwner || _isPro || (_proUntil != null && _proUntil!.isAfter(DateTime.now()));
+  /// Zahlendes PRO läuft (Abo oder Gift-Code noch gültig).
+  bool get hasPaidPro => _proUntil != null && _proUntil!.isAfter(DateTime.now());
+
+  /// PRO ist aktiv, wenn ein Abo/Code läuft — oder der Owner es nutzt.
+  bool get isPro => isOwner || hasPaidPro;
+
+  /// Verlängert sich das Abo am Ende des Zeitraums automatisch?
+  bool get autoRenew => _autoRenew;
+
+  /// Muss der Nutzer den AGB erst noch zustimmen?
+  bool get needsTermsConsent => !_termsAccepted;
 
   DateTime? get proUntil => _proUntil;
 
-  /// Verbleibende PRO-Zeit als Text, falls über einen Code freigeschaltet.
+  /// Verbleibende PRO-Zeit als Text.
   String? get proRemainingLabel {
-    if (_proUntil == null || !_proUntil!.isAfter(DateTime.now())) return null;
+    if (!hasPaidPro) return null;
     final days = _proUntil!.difference(DateTime.now()).inDays;
     if (days >= 60) return 'noch ${(days / 30).round()} Monate';
     if (days >= 1) return 'noch $days Tage';
     return 'läuft heute ab';
+  }
+
+  /// Ablaufdatum als "TT.MM.JJJJ".
+  String? get proUntilLabel {
+    if (!hasPaidPro) return null;
+    final d = _proUntil!;
+    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
 
   List<GiftCode> get giftCodes => List.unmodifiable(_giftCodes);
@@ -150,8 +179,10 @@ class AppState extends ChangeNotifier {
   bool spotBlocked(String id) => _blockedSpots.contains(id);
   bool userBlocked(String name) => _blockedUsers.contains(name);
 
-  /// Darf der aktuelle Nutzer diesen Spot löschen? (Autor oder Owner.)
-  bool canDelete(Spot s) => isOwner || s.authorName == currentUserName;
+  /// Darf der aktuelle Nutzer diesen Spot löschen? Nur der Autor selbst.
+  /// (Der Owner entfernt fremde Spots über die Moderation per „Sperren", nicht
+  /// per Löschen — Löschen bleibt allein dem Ersteller vorbehalten.)
+  bool canDelete(Spot s) => s.authorName == currentUserName;
 
   /// Hidden Gems sind ein PRO-Feature — im Free-Tier bleiben sie verborgen.
   List<Spot> get hiddenGems =>
@@ -235,9 +266,52 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setPro(bool value) async {
-    _isPro = value;
-    await _prefs.setBool(_kPro, value);
+  /// Wann der Nutzer zuletzt zugestimmt hat (Nachweis).
+  DateTime? get termsAcceptedAt => _termsAcceptedAt;
+
+  /// Zustimmung als "TT.MM.JJJJ, HH:MM" für die Anzeige.
+  String? get termsAcceptedLabel {
+    final d = _termsAcceptedAt;
+    if (d == null) return null;
+    String p(int n) => n.toString().padLeft(2, '0');
+    return '${p(d.day)}.${p(d.month)}.${d.year}, ${p(d.hour)}:${p(d.minute)}';
+  }
+
+  /// Bestätigt die Zustimmung zu AGB & Datenschutz (beim ersten Start).
+  /// Protokolliert Version und Zeitpunkt als Nachweis der Einwilligung.
+  Future<void> acceptTerms() async {
+    _termsAccepted = true;
+    _termsAcceptedAt = DateTime.now();
+    await _prefs.setInt(_kTermsVersion, currentTermsVersion);
+    await _prefs.setString(_kTermsAcceptedAt, _termsAcceptedAt!.toIso8601String());
+    notifyListeners();
+  }
+
+  // --- PRO-Abo ---
+
+  /// Schließt das PRO-Abo ab (Demo: ohne echte Zahlung). Verlängert die Laufzeit
+  /// um einen Monat und aktiviert die automatische Verlängerung.
+  Future<void> purchasePro() async {
+    final base = hasPaidPro ? _proUntil! : DateTime.now();
+    _proUntil = DateTime(base.year, base.month + 1, base.day, base.hour, base.minute);
+    _autoRenew = true;
+    await _prefs.setString(_kProUntil, _proUntil!.toIso8601String());
+    await _prefs.setBool(_kAutoRenew, true);
+    notifyListeners();
+  }
+
+  /// Kündigt das Abo: keine automatische Verlängerung mehr, aber PRO bleibt bis
+  /// zum Ende des bereits bezahlten Zeitraums aktiv.
+  Future<void> cancelSubscription() async {
+    _autoRenew = false;
+    await _prefs.setBool(_kAutoRenew, false);
+    notifyListeners();
+  }
+
+  /// Reaktiviert die automatische Verlängerung (Kündigung zurücknehmen).
+  Future<void> resumeSubscription() async {
+    _autoRenew = true;
+    await _prefs.setBool(_kAutoRenew, true);
     notifyListeners();
   }
 

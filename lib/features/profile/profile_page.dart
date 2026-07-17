@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme.dart';
+import '../legal/legal_page.dart';
 import '../owner/owner_panel_page.dart';
 import '../pro/collections_page.dart';
 import '../pro/paywall_page.dart';
@@ -119,6 +120,22 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
               ),
+
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.gavel_outlined, color: AppTheme.textMuted),
+            title: const Text('Rechtliches',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            subtitle: const Text('Nutzungsbedingungen, Datenschutz, Impressum',
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+            trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LegalPage()),
+            ),
+          ),
         ],
       ),
     );

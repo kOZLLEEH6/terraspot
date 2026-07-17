@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/models/category.dart';
 import '../../core/models/spot.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme.dart';
@@ -19,6 +20,11 @@ class SpotDetailPage extends StatelessWidget {
   final String spotId;
 
   Future<void> _navigate(BuildContext context, Spot spot) async {
+    // Sicherheitswarnung vor der Navigation zu einem Outdoor-Ort — im Moment
+    // der Gefahr, gut nachweisbar und rechtlich sinnvoll.
+    final proceed = await _showSafetyWarning(context, spot);
+    if (proceed != true || !context.mounted) return;
+
     // Geo-URI funktioniert nativ; im Web öffnet Google Maps im neuen Tab.
     final uri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}',
@@ -30,6 +36,72 @@ class SpotDetailPage extends StatelessWidget {
         );
       }
     }
+  }
+
+  Future<bool?> _showSafetyWarning(BuildContext context, Spot spot) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppTheme.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text('⚠️', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Sicherheitshinweis',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Das Aufsuchen dieses Ortes geschieht auf eigene Gefahr. Angaben zu '
+                'Weg, Dauer und Schwierigkeit können ungenau oder veraltet sein.\n\n'
+                'Prüfe vorher selbst: Wetter, deine Ausrüstung und Kondition, '
+                'örtliche Regeln, Betretungsrechte und Sperrungen. Kehre im Zweifel um.',
+                style: TextStyle(fontSize: 13.5, height: 1.5, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                spot.difficulty == Difficulty.hard
+                    ? '⛰️ Dieser Spot gilt als anspruchsvoll — nur mit Erfahrung und Ausrüstung.'
+                    : 'Bleib auf markierten Wegen und respektiere die Natur.',
+                style: const TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Abbrechen'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Verstanden, los'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override

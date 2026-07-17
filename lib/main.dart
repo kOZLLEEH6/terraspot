@@ -6,6 +6,7 @@ import 'core/state/app_state.dart';
 import 'core/theme.dart';
 import 'features/create/create_spot_page.dart';
 import 'features/feed/feed_page.dart';
+import 'features/legal/consent_gate.dart';
 import 'features/map/map_page.dart';
 import 'features/profile/profile_page.dart';
 import 'features/search/search_page.dart';
@@ -57,8 +58,15 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (context.watch<AppState>().loading) {
+    final state = context.watch<AppState>();
+
+    if (state.loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Beim ersten Start (oder nach AGB-Änderung) zuerst Zustimmung einholen.
+    if (state.needsTermsConsent) {
+      return const ConsentGate();
     }
 
     return Scaffold(

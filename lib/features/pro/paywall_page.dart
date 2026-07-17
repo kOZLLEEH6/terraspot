@@ -6,9 +6,9 @@ import '../../core/theme.dart';
 
 /// Die Paywall. Öffnet sich als Bottom-Sheet, wenn ein PRO-Feature angetippt wird.
 ///
-/// Im MVP ist der Kauf ein Schalter — Stripe (Web) und In-App-Käufe (iOS/Android)
-/// hängen genau hier an: `state.setPro(true)` wird durch den Callback des
-/// Zahlungsanbieters ersetzt.
+/// Im MVP ist der Kauf eine Zustandsänderung (`purchasePro`/`cancelSubscription`).
+/// Die echten App-Store-/Play-Käufe hängen genau hier an: ihr Erfolgs-Callback
+/// ruft dann `purchasePro`, die Store-Kündigung spiegelt sich in `cancelSubscription`.
 class PaywallPage extends StatelessWidget {
   const PaywallPage({super.key, this.feature});
 
@@ -173,80 +173,143 @@ class PaywallPage extends StatelessWidget {
                 color: AppTheme.surface,
                 border: Border(top: BorderSide(color: Color(0xFF25313C))),
               ),
-              child: state.isPro
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check_circle, color: AppTheme.proGold, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'PRO ist aktiv',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.proGold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            state.setPro(false);
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'PRO deaktivieren (Demo)',
-                            style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: () {
-                              state.setPro(true);
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  backgroundColor: AppTheme.proGold,
-                                  content: Text(
-                                    'PRO aktiv — Heatmap, Score und Golden Hour sind jetzt frei',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppTheme.proGold,
-                              foregroundColor: Colors.black,
-                            ),
-                            child: const Text('PRO starten — 9,99 €/Monat'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Demo: schaltet PRO ohne Zahlung frei. '
-                          'Hier hängen später Stripe und In-App-Käufe.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                        ),
-                      ],
-                    ),
+              child: _SubscriptionControls(state: state),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Der untere Steuerbereich der Paywall — je nach Abo-Status: kaufen,
+/// kündigen (bleibt bis Monatsende) oder Verlängerung wieder aktivieren.
+class _SubscriptionControls extends StatelessWidget {
+  const _SubscriptionControls({required this.state});
+
+  final AppState state;
+
+  void _toast(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.proGold,
+        content: Text(msg,
+            style: const TextStyle(
+                color: Colors.black, fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Zahlendes Abo aktiv?
+    if (state.hasPaidPro) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle, color: AppTheme.proGold, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                state.autoRenew
+                    ? 'PRO aktiv — verlängert sich automatisch'
+                    : 'PRO aktiv bis ${state.proUntilLabel}',
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.proGold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            state.autoRenew
+                ? 'Nächste Abbuchung am ${state.proUntilLabel} · jederzeit kündbar'
+                : 'Kündigung aktiv — läuft am ${state.proUntilLabel} aus und wird '
+                    'nicht verlängert.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+          ),
+          const SizedBox(height: 10),
+          if (state.autoRenew)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  state.cancelSubscription();
+                  _toast(context,
+                      'Abo gekündigt — PRO bleibt bis ${state.proUntilLabel} aktiv.');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.textPrimary,
+                  side: BorderSide(color: AppTheme.textMuted.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text('Abo kündigen'),
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () {
+                  state.resumeSubscription();
+                  _toast(context, 'Automatische Verlängerung wieder aktiv.');
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.proGold,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('Verlängerung wieder aktivieren'),
+              ),
+            ),
+          if (state.isOwner)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text('Als Owner hast du dauerhaft Zugriff auf alle Funktionen.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+            ),
+        ],
+      );
+    }
+
+    // Owner ohne laufendes Abo: Hinweis + trotzdem Testkauf möglich.
+    // Sonst: normaler Kauf-Button.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () {
+              state.purchasePro();
+              _toast(context,
+                  'PRO gestartet — verlängert sich monatlich, jederzeit kündbar.');
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.proGold,
+              foregroundColor: Colors.black,
+            ),
+            child: Text('PRO starten — ${AppState.proPriceLabel}'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Verlängert sich automatisch um 1 Monat. Jederzeit kündbar — nach der '
+          'Kündigung bleibt PRO bis zum Ende des bezahlten Zeitraums.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Demo: ohne echte Zahlung. Hier hängen später App-Store-/Play-Käufe.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+        ),
+      ],
     );
   }
 }
