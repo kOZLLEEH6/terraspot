@@ -17,9 +17,15 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-14 # echter Apple-Mac in der Cloud
+    runs-on: macos-15 # Apple-Mac mit Xcode 16 (fuer neue StoreKit-APIs)
     steps:
       - uses: actions/checkout@v4
+
+      # Neuestes stabiles Xcode wählen (in_app_purchase braucht die iOS-18-StoreKit-APIs).
+      - name: Xcode wählen
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Flutter einrichten
         uses: subosito/flutter-action@v2
@@ -73,7 +79,7 @@ jobs:
   #   APPLE_TEAM_ID  (alles aus dem Apple Developer Account)
   # ---------------------------------------------------------------------------
   build-ipa-signed:
-    runs-on: macos-14
+    runs-on: macos-15
     if: ${{ false }} # auf true setzen, sobald die Apple-Secrets hinterlegt sind
     steps:
       - uses: actions/checkout@v4
