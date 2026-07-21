@@ -1,7 +1,7 @@
 name: terraspot
 description: "Discover the world's most beautiful moments."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2
@@ -36,6 +36,12 @@ dependencies:
   # Backend: Postgres + Auth + Storage. Wird nur aktiv, wenn Zugangsdaten
   # per --dart-define übergeben werden (sonst läuft die App im Mock-Modus).
   supabase_flutter: ^2.16.0
+
+  # Passwort-Hashing für die lokale Anmeldung (kein Klartext).
+  crypto: ^3.0.7
+
+  # In-App-Käufe: Google Play Billing / Apple StoreKit für das PRO-Abo.
+  in_app_purchase: ^3.3.0
 
   intl: ^0.20.3
 

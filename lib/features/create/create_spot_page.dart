@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/category.dart';
 import '../../core/models/spot.dart';
+import '../../core/services/description_generator.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme.dart';
 import '../spot/spot_detail_page.dart';
@@ -93,6 +94,31 @@ class _CreateSpotPageState extends State<CreateSpotPage> {
         SnackBar(content: Text(result.message ?? 'Standort nicht verfügbar')),
       );
     }
+  }
+
+  /// Füllt die Beschreibung automatisch aus den bereits gewählten Feldern.
+  void _autofillDescription() {
+    final text = DescriptionGenerator.generate(
+      title: _title.text,
+      category: _category,
+      region: _region.text,
+      country: _country.text,
+      bestTimeOfDay:
+          '${_bestTime.hour.toString().padLeft(2, '0')}:${_bestTime.minute.toString().padLeft(2, '0')}',
+      bestMonths: _months,
+      difficulty: _difficulty,
+      hikeMinutes: _hikeMinutes.round(),
+      hikeKm: _hikeKm,
+      elevationM: _elevation.round(),
+      hasParking: _parking,
+      dogsAllowed: _dogs,
+      kidsFriendly: _kids,
+      campingAllowed: _camping,
+    );
+    setState(() => _description.text = text);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Beschreibung erstellt — du kannst sie anpassen.')),
+    );
   }
 
   Future<void> _pickPhoto() async {
@@ -193,12 +219,24 @@ class _CreateSpotPageState extends State<CreateSpotPage> {
             ),
             const SizedBox(height: 16),
 
-            const _Label('Beschreibung'),
+            Row(
+              children: [
+                const _Label('Beschreibung'),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _autofillDescription,
+                  icon: const Icon(Icons.auto_awesome, size: 16),
+                  label: const Text('Automatisch'),
+                  style: TextButton.styleFrom(foregroundColor: AppTheme.proGold),
+                ),
+              ],
+            ),
             TextFormField(
               controller: _description,
-              maxLines: 4,
+              maxLines: 5,
               decoration: const InputDecoration(
-                hintText: 'Was macht diesen Ort besonders? Worauf muss man achten?',
+                hintText: 'Was macht diesen Ort besonders? Worauf muss man achten?\n'
+                    'Oder tippe oben auf „Automatisch".',
               ),
               validator: (v) =>
                   (v == null || v.trim().length < 10) ? 'Mindestens 10 Zeichen' : null,

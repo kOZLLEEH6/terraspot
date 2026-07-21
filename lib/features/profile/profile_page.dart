@@ -47,8 +47,6 @@ class ProfilePage extends StatelessWidget {
 
           if (!state.isPro) ...[
             _ProUpsell(),
-            const SizedBox(height: 12),
-            _RedeemRow(),
             const SizedBox(height: 20),
           ] else ...[
             _ProTools(),
@@ -122,23 +120,86 @@ class ProfilePage extends StatelessWidget {
               ),
 
           const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.gavel_outlined, color: AppTheme.textMuted),
-            title: const Text('Rechtliches',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            subtitle: const Text('Nutzungsbedingungen, Datenschutz, Impressum',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-            trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted),
+          const _SectionTitle('Konto & Einstellungen'),
+          const SizedBox(height: 4),
+
+          _SettingsRow(
+            icon: Icons.card_giftcard,
+            title: 'Gutschein-Code einlösen',
+            subtitle: 'PRO mit einem Geschenk-Code freischalten',
+            iconColor: AppTheme.proGold,
+            onTap: () => RedeemCodeSheet.show(context),
+          ),
+          _SettingsRow(
+            icon: Icons.gavel_outlined,
+            title: 'Rechtliches',
+            subtitle: 'Nutzungsbedingungen, Datenschutz, Impressum',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const LegalPage()),
             ),
           ),
+          _SettingsRow(
+            icon: Icons.logout,
+            title: 'Abmelden',
+            subtitle: 'Angemeldet als ${state.currentUserName}',
+            onTap: () => _confirmSignOut(context, state),
+          ),
+          _SettingsRow(
+            icon: Icons.delete_forever,
+            title: 'Konto löschen',
+            subtitle: 'Profil und eigene Spots dauerhaft entfernen',
+            iconColor: const Color(0xFFFF6B6B),
+            titleColor: const Color(0xFFFF6B6B),
+            onTap: () => _confirmDeleteAccount(context, state),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context, AppState state) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Abmelden?'),
+        content: const Text(
+            'Du kannst dich jederzeit wieder anmelden. Deine Spots bleiben erhalten.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Abmelden')),
+        ],
+      ),
+    );
+    if (ok == true) await state.signOut();
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, AppState state) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Konto löschen?'),
+        content: const Text(
+            'Dein Profil und alle von dir erstellten Spots werden dauerhaft '
+            'gelöscht. Das lässt sich nicht rückgängig machen.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF6B6B)),
+            child: const Text('Endgültig löschen'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await state.deleteAccount();
   }
 
   Future<void> _confirmDelete(
@@ -173,6 +234,157 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
+/// Profil-Avatar mit versteckter Owner-Freischaltung: 7-mal antippen öffnet
+/// die Eingabe des geheimen Admin-Schlüssels. Für normale Nutzer unsichtbar.
+class _ProfileAvatar extends StatefulWidget {
+  const _ProfileAvatar({required this.state});
+
+  final AppState state;
+
+  @override
+  State<_ProfileAvatar> createState() => _ProfileAvatarState();
+}
+
+class _ProfileAvatarState extends State<_ProfileAvatar> {
+  int _taps = 0;
+  DateTime _lastTap = DateTime.fromMillisecondsSinceEpoch(0);
+
+  void _onTap() {
+    final now = DateTime.now();
+    // Zähler zurücksetzen, wenn zu lange Pause zwischen den Taps.
+    if (now.difference(_lastTap) > const Duration(seconds: 2)) _taps = 0;
+    _lastTap = now;
+    _taps++;
+    if (_taps >= 7) {
+      _taps = 0;
+      _openOwnerDialog();
+    }
+  }
+
+  Future<void> _openOwnerDialog() async {
+    final state = widget.state;
+    if (state.isOwner) {
+      // Bereits Owner -> Möglichkeit, die Rechte wieder abzugeben.
+      final revoke = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Owner-Zugang'),
+          content: const Text('Du bist als Owner freigeschaltet.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Schließen')),
+            TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Rechte abgeben',
+                    style: TextStyle(color: Color(0xFFFF6B6B)))),
+          ],
+        ),
+      );
+      if (revoke == true) await state.revokeOwner();
+      return;
+    }
+
+    final controller = TextEditingController();
+    // Messenger vom Seiten-Kontext holen — nicht vom Dialog-Kontext, der nach
+    // dem Schließen ungültig ist.
+    final messenger = ScaffoldMessenger.of(context);
+    String? error;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setLocal) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Owner freischalten'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Gib deinen Admin-Schlüssel ein.',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'TERRA-OWNER-XXXX-XXXX-XXXX',
+                  errorText: error,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Abbrechen')),
+            FilledButton(
+              onPressed: () async {
+                final ok = await state.unlockOwner(controller.text);
+                if (!dialogContext.mounted) return;
+                if (ok) {
+                  Navigator.pop(dialogContext);
+                  messenger.showSnackBar(const SnackBar(
+                    backgroundColor: AppTheme.proGold,
+                    content: Text('Owner freigeschaltet',
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.w700)),
+                  ));
+                } else {
+                  setLocal(() => error = 'Falscher Schlüssel.');
+                }
+              },
+              child: const Text('Freischalten'),
+            ),
+          ],
+        ),
+      ),
+    );
+    // Erst nach der Schließ-Animation freigeben — sonst greift das noch
+    // animierende Dialog-Textfeld auf einen entsorgten Controller zu.
+    Future.delayed(const Duration(milliseconds: 400), controller.dispose);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    final name = state.currentUserName.trim();
+    final initials = (name.isEmpty
+            ? '?'
+            : name.length == 1
+                ? name
+                : name.substring(0, 2))
+        .toUpperCase();
+
+    return GestureDetector(
+      onTap: _onTap,
+      child: Container(
+        width: 66,
+        height: 66,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [AppTheme.accent, AppTheme.accentAlt],
+          ),
+          border: state.isPro
+              ? Border.all(color: AppTheme.proGold, width: 2.5)
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            initials,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Header extends StatelessWidget {
   const _Header({required this.state});
 
@@ -181,29 +393,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          Container(
-            width: 66,
-            height: 66,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [AppTheme.accent, AppTheme.accentAlt],
-              ),
-              border: state.isPro
-                  ? Border.all(color: AppTheme.proGold, width: 2.5)
-                  : null,
-            ),
-            child: const Center(
-              child: Text(
-                'AH',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
+          _ProfileAvatar(state: state),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -493,28 +683,39 @@ class _OwnerCard extends StatelessWidget {
 }
 
 /// "Hast du einen Code?" — für Nutzer ohne PRO.
-class _RedeemRow extends StatelessWidget {
+/// Eine Zeile in „Konto & Einstellungen".
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.iconColor,
+    this.titleColor,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? titleColor;
+
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: () => RedeemCodeSheet.show(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: BoxDecoration(
-            color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              const Text('🎁', style: TextStyle(fontSize: 17)),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text('Ich habe einen Gutschein-Code',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              ),
-              const Icon(Icons.chevron_right, color: AppTheme.textMuted),
-            ],
-          ),
-        ),
+  Widget build(BuildContext context) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: iconColor ?? AppTheme.textMuted),
+        title: Text(title,
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: titleColor ?? AppTheme.textPrimary)),
+        subtitle: Text(subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+        trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted),
+        onTap: onTap,
       );
 }
 

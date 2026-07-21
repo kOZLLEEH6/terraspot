@@ -278,22 +278,34 @@ class _SubscriptionControls extends StatelessWidget {
 
     // Owner ohne laufendes Abo: Hinweis + trotzdem Testkauf möglich.
     // Sonst: normaler Kauf-Button.
+    final store = state.billingAvailable;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
           width: double.infinity,
           child: FilledButton(
-            onPressed: () {
-              state.purchasePro();
-              _toast(context,
-                  'PRO gestartet — verlängert sich monatlich, jederzeit kündbar.');
+            onPressed: () async {
+              if (store) {
+                // Echter Store-Kauf — PRO wird über den Purchase-Stream frei-
+                // geschaltet, nicht hier direkt.
+                final started = await state.buyProViaStore();
+                if (context.mounted && !started) {
+                  _toast(context, 'Kauf konnte nicht gestartet werden.');
+                }
+              } else {
+                state.purchasePro();
+                if (context.mounted) {
+                  _toast(context,
+                      'PRO gestartet — verlängert sich monatlich, jederzeit kündbar.');
+                }
+              }
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.proGold,
               foregroundColor: Colors.black,
             ),
-            child: Text('PRO starten — ${AppState.proPriceLabel}'),
+            child: Text('PRO starten — ${state.proPriceDisplay}'),
           ),
         ),
         const SizedBox(height: 8),
@@ -303,12 +315,22 @@ class _SubscriptionControls extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'Demo: ohne echte Zahlung. Hier hängen später App-Store-/Play-Käufe.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
-        ),
+        if (store)
+          TextButton(
+            onPressed: () => state.restorePurchases(),
+            child: const Text('Käufe wiederherstellen',
+                style: TextStyle(fontSize: 12)),
+          )
+        else
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Demo: ohne echte Zahlung. Auf dem Handy mit eingerichtetem '
+              'Store-Produkt läuft der echte Kauf.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+            ),
+          ),
       ],
     );
   }

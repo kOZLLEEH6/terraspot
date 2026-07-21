@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +14,7 @@ import '../data/supabase_spot_repository.dart';
 import '../models/category.dart';
 import '../models/filters.dart';
 import '../models/spot.dart';
+import '../services/billing_service.dart';
 import '../services/location_service.dart';
 import '../services/weather_service.dart';
 
@@ -24,6 +27,11 @@ class AppState extends ChangeNotifier {
   static const _kGiftCodes = 'gift_codes';
   static const _kTermsVersion = 'accepted_terms_version';
   static const _kTermsAcceptedAt = 'accepted_terms_at';
+  static const _kAccUsername = 'account_username';
+  static const _kAccPassHash = 'account_pass_hash';
+  static const _kAccSalt = 'account_salt';
+  static const _kSignedIn = 'account_signed_in';
+  static const _kAccIsOwner = 'account_is_owner';
 
   /// Version der akzeptierten Bedingungen. Erhöhen, wenn sich die AGB/Datenschutz-
   /// Texte inhaltlich ändern — dann muss der Nutzer erneut zustimmen.
@@ -35,13 +43,26 @@ class AppState extends ChangeNotifier {
   /// Free-Tier: bis zu 20 gespeicherte Orte (aus dem Konzept).
   static const freeSaveLimit = 20;
 
-  /// Der Owner der App (das bist du). Sieht Meldungen, kann sperren und
-  /// Gift-Codes erzeugen. Im Mock-Modus ist der eingeloggte Nutzer der Owner.
-  static const ownerName = MockSpotRepository.defaultUserName;
+  /// Owner-Freischaltung: In der App liegt NUR der SHA-256-Hash des geheimen
+  /// Admin-Schlüssels, nie der Schlüssel selbst. Owner wird nur, wer den
+  /// richtigen Schlüssel eingibt (siehe [unlockOwner]). Ein geratener
+  /// Benutzername reicht also nicht mehr.
+  ///
+  /// ⚠️ Rein clientseitig lässt sich das nicht vollständig „hack-sicher" machen
+  /// (wer die App dekompiliert, sieht die Prüf-Logik). Der echte, fälschungs-
+  /// sichere Owner-Schutz kommt mit Supabase als serverseitige Rolle. Ein
+  /// starker Schlüssel schützt aber zuverlässig gegen normale Nutzer.
+  static const _adminKeyHash =
+      '1ae91a8a48f0c41ba894c6272703beb989a5ce5e665de4980ad1b6c8b38ccfdd';
+
+  /// Mindestlängen für die Anmeldung.
+  static const minUsernameLength = 3;
+  static const minPasswordLength = 6;
 
   final SpotRepository _repo;
   final SharedPreferences _prefs;
   final weather = WeatherService();
+  BillingService? _billing;
 
   List<Spot> _spots = [];
   Set<String> _liked = {};
@@ -55,6 +76,11 @@ class AppState extends ChangeNotifier {
   List<GiftCode> _giftCodes = [];
   bool _termsAccepted = false;
   DateTime? _termsAcceptedAt;
+  String? _accUsername;
+  String? _accPassHash;
+  String? _accSalt;
+  bool _signedIn = false;
+  bool _accIsOwner = false;
   bool _loading = true;
 
   static Future<AppState> create() async {
@@ -79,6 +105,10 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final state = AppState._(repo, prefs);
     await state._load();
+
+    // Store-Käufe im Hintergrund initialisieren (blockiert den Start nicht).
+    // Fällt auf Web/Desktop bzw. ohne konfiguriertes Produkt einfach weg.
+    unawaited(state._initBilling());
     return state;
   }
 
@@ -93,6 +123,12 @@ class AppState extends ChangeNotifier {
         (_prefs.getInt(_kTermsVersion) ?? 0) >= currentTermsVersion;
     final acceptedAt = _prefs.getString(_kTermsAcceptedAt);
     _termsAcceptedAt = acceptedAt == null ? null : DateTime.tryParse(acceptedAt);
+
+    _accUsername = _prefs.getString(_kAccUsername);
+    _accPassHash = _prefs.getString(_kAccPassHash);
+    _accSalt = _prefs.getString(_kAccSalt);
+    _signedIn = _prefs.getBool(_kSignedIn) ?? false;
+    _accIsOwner = _prefs.getBool(_kAccIsOwner) ?? false;
 
     final until = _prefs.getString(_kProUntil);
     _proUntil = until == null ? null : DateTime.tryParse(until);
@@ -113,8 +149,21 @@ class AppState extends ChangeNotifier {
 
   bool get loading => _loading;
 
-  /// Bist du der Owner? Schaltet Moderation und Gift-Code-Erzeugung frei.
-  bool get isOwner => currentUserName == ownerName;
+  // --- Konto / Anmeldung ---
+
+  /// Gibt es auf dem Gerät bereits ein Konto? (Dann Anmelden statt Registrieren.)
+  bool get hasAccount => _accUsername != null && _accPassHash != null;
+
+  /// Ist ein Nutzer gerade angemeldet?
+  bool get isSignedIn => hasAccount && _signedIn;
+
+  /// Nach der AGB-Zustimmung noch anmelden?
+  bool get needsAuth => !isSignedIn;
+
+  /// Bist du der Owner? Wird nur durch den korrekten Admin-Schlüssel
+  /// freigeschaltet (siehe [unlockOwner]). Schaltet Moderation und
+  /// Gift-Code-Erzeugung frei.
+  bool get isOwner => isSignedIn && _accIsOwner;
 
   /// Zahlendes PRO läuft (Abo oder Gift-Code noch gültig).
   bool get hasPaidPro => _proUntil != null && _proUntil!.isAfter(DateTime.now());
@@ -169,8 +218,9 @@ class AppState extends ChangeNotifier {
 
   List<Spot> get savedSpots => _spots.where((s) => _saved.contains(s.id)).toList();
 
-  /// Anzeigename des aktuellen Nutzers — vom aktiven Repository (Mock oder Supabase).
-  String get currentUserName => _repo.currentUserName;
+  /// Anzeigename des aktuellen Nutzers — der Benutzername, sonst der Fallback
+  /// des Repositories.
+  String get currentUserName => _accUsername ?? _repo.currentUserName;
 
   List<Spot> get mySpots =>
       _spots.where((s) => s.authorName == currentUserName).toList();
@@ -287,6 +337,100 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Registriert ein neues Konto mit Benutzername + Passwort (lokal gespeichert,
+  /// Passwort als gesalzener SHA-256-Hash — nie im Klartext).
+  ///
+  /// Mit Supabase wird daraus eine echte Registrierung über Supabase Auth.
+  Future<AuthOutcome> register(String username, String password) async {
+    final u = username.trim();
+    if (u.length < minUsernameLength) return AuthOutcome.usernameTooShort;
+    if (password.length < minPasswordLength) return AuthOutcome.passwordTooShort;
+
+    final salt = _newSalt();
+    _accSalt = salt;
+    _accPassHash = _hash(password, salt);
+    _accUsername = u;
+    _signedIn = true;
+    _accIsOwner = false; // Owner wird nur über den Admin-Schlüssel freigeschaltet.
+
+    await _prefs.setString(_kAccUsername, u);
+    await _prefs.setString(_kAccPassHash, _accPassHash!);
+    await _prefs.setString(_kAccSalt, salt);
+    await _prefs.setBool(_kSignedIn, true);
+    await _prefs.setBool(_kAccIsOwner, false);
+    notifyListeners();
+    return AuthOutcome.success;
+  }
+
+  /// Schaltet Owner-Rechte frei, wenn der eingegebene Admin-Schlüssel stimmt.
+  /// Verglichen wird nur der SHA-256-Hash — der Schlüssel steht nirgends in der App.
+  Future<bool> unlockOwner(String key) async {
+    final hash = sha256.convert(utf8.encode(key.trim())).toString();
+    if (hash != _adminKeyHash) return false;
+    _accIsOwner = true;
+    await _prefs.setBool(_kAccIsOwner, true);
+    notifyListeners();
+    return true;
+  }
+
+  /// Gibt die Owner-Rechte wieder ab (ohne das Konto zu löschen).
+  Future<void> revokeOwner() async {
+    _accIsOwner = false;
+    await _prefs.setBool(_kAccIsOwner, false);
+    notifyListeners();
+  }
+
+  /// Meldet ein bestehendes Konto an (Benutzername + Passwort prüfen).
+  Future<AuthOutcome> login(String username, String password) async {
+    if (!hasAccount) return AuthOutcome.noAccount;
+    if (username.trim().toLowerCase() != _accUsername!.toLowerCase()) {
+      return AuthOutcome.wrongCredentials;
+    }
+    if (_hash(password, _accSalt!) != _accPassHash) {
+      return AuthOutcome.wrongCredentials;
+    }
+    _signedIn = true;
+    await _prefs.setBool(_kSignedIn, true);
+    notifyListeners();
+    return AuthOutcome.success;
+  }
+
+  /// Meldet ab — das Konto bleibt bestehen, nur die Sitzung endet.
+  /// Die Daten (Spots) bleiben erhalten.
+  Future<void> signOut() async {
+    _signedIn = false;
+    await _prefs.setBool(_kSignedIn, false);
+    notifyListeners();
+  }
+
+  /// Löscht das Konto samt der selbst erstellten Spots (Apple-Store-Anforderung).
+  Future<void> deleteAccount() async {
+    for (final s in mySpots.toList()) {
+      await _repo.delete(s.id);
+    }
+    _spots = await _repo.all();
+
+    _accUsername = null;
+    _accPassHash = null;
+    _accSalt = null;
+    _signedIn = false;
+    _accIsOwner = false;
+    await _prefs.remove(_kAccUsername);
+    await _prefs.remove(_kAccPassHash);
+    await _prefs.remove(_kAccSalt);
+    await _prefs.remove(_kSignedIn);
+    await _prefs.remove(_kAccIsOwner);
+    notifyListeners();
+  }
+
+  static String _newSalt() {
+    final r = Random.secure();
+    return base64Url.encode(List.generate(16, (_) => r.nextInt(256)));
+  }
+
+  static String _hash(String password, String salt) =>
+      sha256.convert(utf8.encode('$salt:$password')).toString();
+
   // --- PRO-Abo ---
 
   /// Schließt das PRO-Abo ab (Demo: ohne echte Zahlung). Verlängert die Laufzeit
@@ -299,6 +443,28 @@ class AppState extends ChangeNotifier {
     await _prefs.setBool(_kAutoRenew, true);
     notifyListeners();
   }
+
+  // --- Store-Käufe (Google Play / App Store) ---
+
+  Future<void> _initBilling() async {
+    _billing = BillingService(onPurchased: () => purchasePro());
+    await _billing!.init();
+    await _billing!.restore(); // bestehende Abonnenten wieder freischalten
+    notifyListeners();
+  }
+
+  /// Sind echte Store-Käufe verfügbar (Produkt konfiguriert)?
+  bool get billingAvailable => _billing?.available ?? false;
+
+  /// Preis direkt vom Store (z. B. "9,99 €"), sonst der Standard-Text.
+  String get proPriceDisplay => _billing?.priceLabel ?? proPriceLabel;
+
+  /// Startet den echten Store-Kauf. Gibt false zurück, wenn nicht verfügbar —
+  /// dann nutzt die Paywall den Demo-/Gutschein-Weg.
+  Future<bool> buyProViaStore() async => await _billing?.buyPro() ?? false;
+
+  /// Stellt frühere Käufe wieder her („Käufe wiederherstellen").
+  Future<void> restorePurchases() async => await _billing?.restore();
 
   /// Kündigt das Abo: keine automatische Verlängerung mehr, aber PRO bleibt bis
   /// zum Ende des bereits bezahlten Zeitraums aktiv.
@@ -484,6 +650,24 @@ class AppState extends ChangeNotifier {
 }
 
 enum RedeemResult { success, invalid, alreadyUsed }
+
+enum AuthOutcome {
+  success,
+  usernameTooShort,
+  passwordTooShort,
+  wrongCredentials,
+  noAccount;
+
+  String? get message => switch (this) {
+        AuthOutcome.success => null,
+        AuthOutcome.usernameTooShort =>
+          'Der Benutzername ist zu kurz (mind. ${AppState.minUsernameLength} Zeichen).',
+        AuthOutcome.passwordTooShort =>
+          'Das Passwort ist zu kurz (mind. ${AppState.minPasswordLength} Zeichen).',
+        AuthOutcome.wrongCredentials => 'Benutzername oder Passwort ist falsch.',
+        AuthOutcome.noAccount => 'Es existiert noch kein Konto. Bitte registrieren.',
+      };
+}
 
 /// Ein vom Owner erzeugter Code, der PRO für eine Anzahl Monate freischaltet.
 class GiftCode {

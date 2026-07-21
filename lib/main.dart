@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'core/state/app_state.dart';
 import 'core/theme.dart';
+import 'features/auth/auth_screen.dart';
 import 'features/create/create_spot_page.dart';
 import 'features/feed/feed_page.dart';
 import 'features/legal/consent_gate.dart';
@@ -64,9 +65,12 @@ class _RootShellState extends State<RootShell> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Beim ersten Start (oder nach AGB-Änderung) zuerst Zustimmung einholen.
+    // Reihenfolge beim ersten Start: 1) AGB zustimmen, 2) anmelden.
     if (state.needsTermsConsent) {
       return const ConsentGate();
+    }
+    if (state.needsAuth) {
+      return const AuthScreen();
     }
 
     return Scaffold(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/legal.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme.dart';
+import 'photo_credits_page.dart';
 
 /// Jederzeit erreichbare Rechtstexte (AGB, Datenschutz, Impressum) — rechtlich
 /// müssen diese Inhalte dauerhaft abrufbar sein, nicht nur beim ersten Start.
@@ -62,6 +63,25 @@ class LegalPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ],
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: AppTheme.textMuted),
+              title: const Text('Bildnachweise',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text('Urheber & Lizenzen der Beispiel-Fotos',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+              trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PhotoCreditsPage()),
+              ),
+            ),
+          ),
           Text(
             'Stand: Version ${Legal.version}. Vorlagentext — vor Veröffentlichung '
             'anwaltlich prüfen lassen und Platzhalter ausfüllen.',

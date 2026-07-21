@@ -26,6 +26,10 @@ class SpotPreviewCard extends StatelessWidget {
     return GestureDetector(
       onTap: onOpen,
       child: Container(
+        // Feste Höhe: sonst würde der Spacer in der Spalte die Karte über den
+        // ganzen Bildschirm strecken, weil die Karte von unten nur lockere
+        // (nach oben offene) Constraints bekommt.
+        height: 116,
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(18),
@@ -38,8 +42,8 @@ class SpotPreviewCard extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 108,
-              height: 108,
+              width: 116,
+              height: 116,
               child: SpotPhoto(spot: spot),
             ),
             Expanded(

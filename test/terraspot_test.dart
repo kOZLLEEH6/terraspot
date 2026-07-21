@@ -245,11 +245,14 @@ void main() {
       }
     });
 
-    test('es gibt Hidden Gems, aber nicht jeder Spot ist einer', () {
-      final gems = spots.where((s) => s.isHiddenGem).toList();
+    test('zum Release sind Likes und Bewertungen zurückgesetzt', () {
+      expect(spots.every((s) => s.likes == 0), isTrue, reason: 'Likes');
+      expect(spots.every((s) => s.rating == 0), isTrue, reason: 'rating');
+      expect(spots.every((s) => s.ratingCount == 0), isTrue, reason: 'ratingCount');
 
-      expect(gems, isNotEmpty);
-      expect(gems.length, lessThan(spots.length ~/ 2));
+      // Da Hidden Gems eine Bewertung >= 4.5 brauchen, gibt es anfangs keine —
+      // sie entstehen erst durch echte Bewertungen der Nutzer.
+      expect(spots.any((s) => s.isHiddenGem), isFalse);
     });
 
     test('photoCount stimmt für kuratierte Spots', () {
