@@ -229,8 +229,9 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
     </div>
   </div>
   <div id="frameNote" hidden style="padding:8px 20px;background:var(--warn-soft);border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2)">
-    Du siehst die eingebettete Vorschau. Herunterladen und Kopieren sperrt der Rahmen —
-    für den Weg nach OneNote die Datei <code style="font-family:var(--f-mono)">index.html</code> lokal öffnen.
+    Du siehst die eingebettete Vorschau: Herunterladen fragt hier erst nach, und das Kopieren in die
+    Zwischenablage kann der Rahmen blockieren. Reibungslos läuft der Weg nach OneNote, wenn du die Datei
+    <code style="font-family:var(--f-mono)">index.html</code> lokal öffnest.
   </div>
   <nav class="steps" role="tablist">
     <button class="step" role="tab" aria-selected="true" data-tab="erfassen"><span class="no">1</span>Handschrift erfassen</button>
@@ -1031,14 +1032,29 @@ function buildTemplate(){
   c.fillText('Ecken beim Fotografieren mit aufs Bild nehmen', g.x0, g.y1+44);
   return cv;
 }
-function downloadCanvas(cv, name){
-  cv.toBlob(b=>{
-    const u = URL.createObjectURL(b), a = document.createElement('a');
-    a.href = u; a.download = name; document.body.appendChild(a); a.click();
-    a.remove(); setTimeout(()=>URL.revokeObjectURL(u), 4000);
-  }, 'image/png');
+/* Lokal geoeffnet speichert der Anker-Trick, im eingebetteten Viewer nur die
+   downloads-Faehigkeit. Beides hinter einem Aufruf. */
+const dlReady = (window.claude && typeof claude.use === 'function')
+  ? Promise.resolve(claude.use('downloads')).catch(()=>null)
+  : Promise.resolve(null);
+
+async function saveFile(blob, name){
+  const cap = await dlReady;
+  if(cap){
+    try { await cap.save({ filename:name, data:blob }); toast('Gespeichert: '+name); }
+    catch(err){
+      if(err && err.code === 'declined') return;
+      toast('Speichern ging nicht'+(err && err.code ? ' ('+err.code+')' : '')+'.', 3200);
+    }
+    return;
+  }
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = name; document.body.appendChild(a); a.click();
+  a.remove(); setTimeout(()=>URL.revokeObjectURL(u), 4000);
+  toast('Gespeichert: '+name);
 }
-$('#btnTemplate').addEventListener('click', ()=>{ downloadCanvas(buildTemplate(),'handschrift-vorlage.png'); toast('Vorlage gespeichert'); });
+function downloadCanvas(cv, name){ cv.toBlob(b=>{ if(b) saveFile(b, name); }, 'image/png'); }
+$('#btnTemplate').addEventListener('click', ()=>downloadCanvas(buildTemplate(),'handschrift-vorlage.png'));
 $('#btnTemplatePrint').addEventListener('click', ()=>{
   const url = buildTemplate().toDataURL('image/png');
   const w = window.open('', '_blank');
@@ -1416,21 +1432,14 @@ $('#btnCopy').addEventListener('click', async ()=>{
     $('#copyHint').innerHTML = 'Dein Browser lässt das Kopieren nicht zu (Firefox kann es nur eingeschränkt). Der Download klappt immer.';
   }
 });
-$('#btnPng').addEventListener('click', ()=>{
-  downloadCanvas($('#sheet'), 'handschrift.png');
-  toast('PNG gespeichert');
-});
+$('#btnPng').addEventListener('click', ()=>downloadCanvas($('#sheet'), 'handschrift.png'));
 
 /* ========================= Profil sichern/laden ========================== */
 
 function saveProfileFile(){
   const name = (state.profile.name || 'handschrift').replace(/[^\wäöüÄÖÜß -]/g,'').trim() || 'handschrift';
   const blob = new Blob([JSON.stringify(state.profile)], {type:'application/json'});
-  const u = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = u; a.download = name.toLowerCase().replace(/\s+/g,'-')+'.handschrift.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(u), 4000);
-  toast('Profil gesichert');
+  saveFile(blob, name.toLowerCase().replace(/\s+/g,'-')+'-handschrift.json');
 }
 $('#btnSave').addEventListener('click', saveProfileFile);
 $('#btnSave2').addEventListener('click', saveProfileFile);
