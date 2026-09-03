@@ -13,8 +13,9 @@ Jeder Push auf den eingestellten Branch veröffentlicht die neue Fassung.
 Demo-Schrift fehlt dann.
 
 **Auf dem iPad:** die Website in Safari öffnen und über *Teilen → Zum Home-Bildschirm*
-ablegen. Startet dann im Vollbild und ist von Safaris Sieben-Tage-Aufräumung
-ausgenommen, die sonst den gespeicherten Zeichensatz mitnimmt. Mit dem Apple Pencil
+ablegen. Startet dann im Vollbild, läuft dank `sw.js` auch ohne Netz und ist von
+Safaris Sieben-Tage-Aufräumung ausgenommen, die sonst den gespeicherten Zeichensatz
+mitnimmt. Mit dem Apple Pencil
 ist das Erfassen deutlich angenehmer als mit der Maus, und der Stiftdruck landet
 direkt in der Strichstärke. Sobald ein Stift erkannt wird, erscheint der Schalter
 **Nur Stift**, der die aufliegende Hand aussortiert.
@@ -52,6 +53,8 @@ eine aus, was den Stempel-Effekt vermeidet. Zwei bis drei reichen.
 | Scan | Homographie aus vier Punktpaaren (Gauß mit Pivotierung), bilineare Abtastung, adaptiver Schwellwert pro Zelle, Zusammenhangsanalyse gegen Sprenkel. |
 | Rendering | Pro Glyphe ein zwischengespeichertes Offscreen-Canvas, platziert mit Versatz, Drehung, Skalierung und Grundlinien-Drift aus einem gesäten Zufallsgenerator. |
 | Variation | Deterministisch über einen Seed, damit das Bild beim Reglerziehen ruhig bleibt und sich nur auf Knopfdruck neu würfelt. |
+| Rücknahme | „Alles löschen“ und das Ersetzen durch die Demo legen das vorige Profil beiseite; der Hinweis unten bietet neun Sekunden lang *Rückgängig* an. |
+| Offline | Service Worker, nur bei Auslieferung über einen Server. Die Seite kommt zuerst aus dem Netz, damit Änderungen ankommen, der Zwischenspeicher springt nur bei Ausfall ein; Schriften umgekehrt. |
 | Stift | Pointer Events; `pointerType` trennt Stift von Finger, ab dem ersten Stiftkontakt greift der Handballenschutz. Ohne Druckerkennung leitet die Strichstärke sich aus der Schreibgeschwindigkeit ab. |
 
 ## Grenzen

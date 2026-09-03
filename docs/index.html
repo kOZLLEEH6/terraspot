@@ -232,8 +232,12 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
 #ask h3{font-size:16px;margin-bottom:6px}
 #ask p{margin:0 0 16px;font-size:13px;color:var(--ink-2)}
 #ask .row{justify-content:flex-end}
-#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:90;padding:10px 16px;background:var(--ink);color:var(--bg);border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:90;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;background:var(--ink);color:var(--bg);border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.show{pointer-events:auto}
+#toast button{padding:4px 10px;border:1px solid rgba(127,127,127,.45);background:transparent;color:inherit;border-radius:6px;font:inherit;font-size:12px;cursor:pointer}
+#toast button:hover{background:rgba(127,127,127,.22)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+#toast:empty{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
@@ -580,8 +584,16 @@ function askConfirm(title, text, okLabel='Löschen'){
   });
 }
 
-function toast(msg, ms=2200){
-  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+function toast(msg, ms=2200, aktion){
+  const t = $('#toast');
+  t.textContent = msg;
+  if(aktion){
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = aktion.label;
+    b.addEventListener('click', ()=>{ t.classList.remove('show'); aktion.fn(); });
+    t.appendChild(b);
+  }
+  t.classList.add('show');
   clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), ms);
 }
 /* deterministischer Zufall, damit die Vorschau beim Reglerziehen ruhig bleibt */
@@ -597,6 +609,25 @@ const state = {
   capMode: 'draw'
 };
 const STORE_KEY = 'schriftlabor.profil.v1';
+const TRASH_KEY = 'schriftlabor.papierkorb.v1';
+
+/* Löschen und Demo-Laden werfen die ganze Arbeit weg. Das vorige Profil bleibt
+   deshalb greifbar — im Speicher immer, auf der Platte wenn noch Platz ist. */
+let papierkorb = null;
+function merkeFuerRuecknahme(profil){
+  if(!profil || !Object.keys(profil.glyphs || {}).length) { papierkorb = null; return false; }
+  papierkorb = JSON.parse(JSON.stringify(profil));
+  try { localStorage.setItem(TRASH_KEY, JSON.stringify(profil)); } catch(e){}
+  return true;
+}
+function nimmZurueck(){
+  const alt = papierkorb || (()=>{ try { return JSON.parse(localStorage.getItem(TRASH_KEY)); } catch(e){ return null; } })();
+  if(!alt) { toast('Nichts zum Zurückholen da.'); return; }
+  state.profile = alt; papierkorb = null;
+  cache.clear(); imgPool.clear(); saveLocal(); refreshProfileUI();
+  selectChar(state.current); scheduleRender();
+  toast('Wiederhergestellt · ' + glyphCount() + ' Zeichen');
+}
 
 function emptyProfile(name='Meine Handschrift'){ return { v:1, name, demo:false, glyphs:{} }; }
 function variantsOf(ch){ return (state.profile && state.profile.glyphs[ch]) || []; }
@@ -1563,16 +1594,19 @@ $('#btnReset').addEventListener('click', async ()=>{
     n ? n + ' erfasste Zeichen werden gelöscht. Das lässt sich nicht rückgängig machen — sichere vorher das Profil, wenn du es behalten willst.'
       : 'Es ist nichts erfasst. Trotzdem zurücksetzen?');
   if(!ok) return;
+  const rettbar = merkeFuerRuecknahme(state.profile);
   state.profile = emptyProfile();
   cache.clear(); imgPool.clear(); saveLocal(); refreshProfileUI();
   selectChar(ALL_CHARS[0]); scheduleRender();
-  toast('Profil geleert');
+  toast('Profil geleert', rettbar ? 9000 : 2200,
+        rettbar ? { label:'Rückgängig', fn:nimmZurueck } : null);
 });
 $('#btnDemo').addEventListener('click', async ()=>{
   if(glyphCount() && !state.profile.demo){
     const ok = await askConfirm('Demo laden?',
       'Deine ' + glyphCount() + ' erfassten Zeichen werden dabei ersetzt.', 'Ersetzen');
     if(!ok) return;
+    merkeFuerRuecknahme(state.profile);
   }
   loadDemo(true);
 });
@@ -1645,7 +1679,9 @@ async function loadDemo(explicit){
   cache.clear(); imgPool.clear();
   saveLocal(); refreshProfileUI(); scheduleRender();
   if(explicit) toast(has ? 'Demo geladen — ersetze sie durch deine eigene Schrift.'
-                         : 'Demo geladen (ohne Netz mit Systemschrift statt Caveat).');
+                         : 'Demo geladen (ohne Netz mit Systemschrift statt Caveat).',
+                     papierkorb ? 9000 : 2600,
+                     papierkorb ? { label:'Rückgängig', fn:nimmZurueck } : null);
 }
 
 /* ============================ Reiter & Thema ============================= */
@@ -1731,6 +1767,12 @@ ui.text.value = 'Besprechung Dienstag, 10 Uhr\n\nAngebot prüfen, Frist läuft a
   }
 })();
 window.addEventListener('resize', ()=>{ if(scan.img && !$('#modeScan').hidden) setupScanCanvas(); });
+
+/* Offline lauffähig, wenn die Seite von einem Server kommt. Lokal geöffnet
+   (file://) gibt es keinen Service Worker und es braucht auch keinen. */
+if('serviceWorker' in navigator && location.protocol !== 'file:'){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 
 // Im eingebetteten Rahmen sind Download und Zwischenablage gesperrt — das gehoert gesagt.
 try { if(window.top !== window.self) $('#frameNote').hidden = false; } catch(e){ $('#frameNote').hidden = false; }
