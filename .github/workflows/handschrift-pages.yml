@@ -1,0 +1,66 @@
+# Veröffentlicht das Schriftlabor als Website auf GitHub Pages.
+#
+# Ergebnis nach dem ersten erfolgreichen Lauf:
+#   https://kozlleeh6.github.io/terraspot/              (direkt die App)
+#   https://kozlleeh6.github.io/terraspot/handschrift/  (dieselbe App, feste Adresse)
+#
+# Einmalig nötig: unter Settings -> Pages die Quelle auf "GitHub Actions" stellen.
+# Der Schritt "Pages einrichten" versucht das selbst; klappt das nicht, macht man
+# es dort mit zwei Klicks von Hand.
+#
+# Es wird nichts gebaut und nichts installiert: die App ist eine einzelne
+# HTML-Datei, die hier nur an die richtige Stelle kopiert wird.
+
+name: Handschrift-Website
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/text-handwriting-converter-b4s3uw"
+    paths:
+      - "tools/handschrift/**"
+      - ".github/workflows/handschrift-pages.yml"
+  workflow_dispatch: {} # Knopf zum manuellen Starten unter "Actions"
+
+# Rechte, die das Veröffentlichen braucht
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Läuft immer nur eine Veröffentlichung gleichzeitig
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  veroeffentlichen:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Seite zusammenstellen
+        run: |
+          mkdir -p _site/handschrift
+          cp tools/handschrift/index.html _site/index.html
+          cp tools/handschrift/index.html _site/handschrift/index.html
+          touch _site/.nojekyll   # verhindert, dass GitHub die Dateien umbaut
+          ls -lh _site _site/handschrift
+
+      - name: Pages einrichten
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true # aktiviert Pages, falls noch nicht geschehen
+
+      - name: Hochladen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4
