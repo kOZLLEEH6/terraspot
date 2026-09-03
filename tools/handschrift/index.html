@@ -228,6 +228,10 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
       <input type="file" id="fileProfile" accept="application/json,.json" hidden>
     </div>
   </div>
+  <div id="frameNote" hidden style="padding:8px 20px;background:var(--warn-soft);border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2)">
+    Du siehst die eingebettete Vorschau. Herunterladen und Kopieren sperrt der Rahmen —
+    für den Weg nach OneNote die Datei <code style="font-family:var(--f-mono)">index.html</code> lokal öffnen.
+  </div>
   <nav class="steps" role="tablist">
     <button class="step" role="tab" aria-selected="true" data-tab="erfassen"><span class="no">1</span>Handschrift erfassen</button>
     <button class="step" role="tab" aria-selected="false" data-tab="schreiben"><span class="no">2</span>Text schreiben</button>
@@ -1597,6 +1601,9 @@ ui.text.value = 'Besprechung Dienstag, 10 Uhr\n\nAngebot prüfen, Frist läuft a
   }
 })();
 window.addEventListener('resize', ()=>{ if(scan.img && !$('#modeScan').hidden) setupScanCanvas(); });
+
+// Im eingebetteten Rahmen sind Download und Zwischenablage gesperrt — das gehoert gesagt.
+try { if(window.top !== window.self) $('#frameNote').hidden = false; } catch(e){ $('#frameNote').hidden = false; }
 </script>
 </body>
 </html>
