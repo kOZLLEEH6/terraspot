@@ -4,9 +4,17 @@ Wandelt getippten Text in die eigene Handschrift um und liefert das Ergebnis als
 das sich in OneNote einfügen lässt.
 
 Eine einzelne HTML-Datei ohne Abhängigkeiten, ohne Server, ohne Installation.
-Doppelklick auf `index.html` genügt. Nichts verlässt den Rechner: die erfasste
-Handschrift liegt im `localStorage` des Browsers und in der Profildatei, die man
-selbst sichert.
+
+**Als Website:** <https://kozlleeh6.github.io/terraspot/> — dieser Ordner wird von
+GitHub Pages ausgeliefert (Settings → Pages → Deploy from a branch → Ordner `/docs`).
+Jeder Push auf den eingestellten Branch veröffentlicht die neue Fassung.
+
+**Lokal:** `index.html` herunterladen und doppelklicken. Läuft ohne Netz, nur die
+Demo-Schrift fehlt dann.
+
+So oder so verlässt nichts den Rechner: es gibt keinen Server und keinen Upload. Die
+erfasste Handschrift liegt im `localStorage` des Browsers und in der Profildatei, die
+man selbst sichert.
 
 Hat mit der TerraSpot-App nichts zu tun, liegt hier nur mit im Repo.
 
