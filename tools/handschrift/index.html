@@ -1,0 +1,1602 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schriftlabor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#eef0f5;
+  --surface:#ffffff;
+  --surface-2:#f7f8fb;
+  --sunken:#e3e6ee;
+  --ink:#15181f;
+  --ink-2:#454c5c;
+  --muted:#727a8c;
+  --line:#d5d9e4;
+  --line-strong:#b8bfd0;
+  --accent:#2c3fb0;
+  --accent-soft:#e6e9fa;
+  --accent-ink:#ffffff;
+  --ok:#1c7d55;
+  --ok-soft:#e0f2e9;
+  --warn:#96650c;
+  --warn-soft:#faf0da;
+  --crit:#b3392f;
+  --crit-soft:#fbe7e5;
+  --paper:#ffffff;
+  --rule:#c3d3e8;
+  --shadow:0 1px 2px rgba(21,24,31,.06),0 8px 24px -12px rgba(21,24,31,.18);
+  --radius:10px;
+  --f-ui:'Archivo','Segoe UI',system-ui,-apple-system,sans-serif;
+  --f-mono:'IBM Plex Mono','Cascadia Mono',ui-monospace,'Courier New',monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111319;
+    --surface:#1a1d25;
+    --surface-2:#20242e;
+    --sunken:#0d0f14;
+    --ink:#e7eaf2;
+    --ink-2:#b3bacb;
+    --muted:#8b93a6;
+    --line:#2c313d;
+    --line-strong:#3b4252;
+    --accent:#8b9cff;
+    --accent-soft:#232842;
+    --accent-ink:#12151d;
+    --ok:#4fc08d;
+    --ok-soft:#16291f;
+    --warn:#d9a441;
+    --warn-soft:#2b2314;
+    --crit:#f08279;
+    --crit-soft:#2e1a18;
+    --paper:#f4f4f2;
+    --rule:#c3d3e8;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111319; --surface:#1a1d25; --surface-2:#20242e; --sunken:#0d0f14;
+  --ink:#e7eaf2; --ink-2:#b3bacb; --muted:#8b93a6; --line:#2c313d; --line-strong:#3b4252;
+  --accent:#8b9cff; --accent-soft:#232842; --accent-ink:#12151d;
+  --ok:#4fc08d; --ok-soft:#16291f; --warn:#d9a441; --warn-soft:#2b2314;
+  --crit:#f08279; --crit-soft:#2e1a18; --paper:#f4f4f2; --rule:#c3d3e8;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* ---------- Kopfzeile ---------- */
+.top{position:sticky;top:0;z-index:30;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:1440px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand h1{font-size:17px;letter-spacing:-.02em}
+.brand .sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.02em}
+.profile-chip{display:flex;align-items:center;gap:10px;padding:5px 10px 5px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px}
+.profile-chip .nm{font-weight:500;font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-chip .ct{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter{width:64px;height:5px;background:var(--sunken);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);width:0%;transition:width .3s}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:background .12s,border-color .12s,transform .06s}
+.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.42;cursor:not-allowed;transform:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
+.btn.ghost:hover{background:var(--surface-2);color:var(--ink)}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:6px}
+.btn.big{padding:11px 18px;font-size:14px}
+
+/* ---------- Schritt-Navigation ---------- */
+.steps{max-width:1440px;margin:0 auto;padding:0 20px;display:flex;gap:0}
+.step{position:relative;display:flex;align-items:center;gap:9px;padding:11px 18px 12px;background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);font-weight:500}
+.step:hover{color:var(--ink-2)}
+.step[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.step .no{font-family:var(--f-mono);font-size:11px;width:19px;height:19px;display:grid;place-items:center;border-radius:5px;background:var(--sunken);color:var(--muted)}
+.step[aria-selected="true"] .no{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- Layout ---------- */
+main{max-width:1440px;margin:0 auto;padding:20px}
+.panel[hidden]{display:none}
+.split{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+.card>header{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card>header h2{font-size:14px}
+.card>header .hint{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-left:auto}
+.card .body{padding:16px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+
+/* ---------- Formularelemente ---------- */
+label.fld{display:flex;flex-direction:column;gap:5px}
+label.fld>.lb{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+label.fld .val{color:var(--ink-2);font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--sunken);border-radius:2px}
+input[type=range]::-moz-range-track{height:4px;background:var(--sunken);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line-strong)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:2px solid var(--surface);border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px var(--line-strong)}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:7px}
+textarea{resize:vertical;min-height:200px;line-height:1.55}
+input[type=color]{width:38px;height:32px;padding:2px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:7px;cursor:pointer}
+.seg{display:inline-flex;padding:3px;background:var(--sunken);border-radius:9px;gap:3px}
+.seg button{padding:6px 13px;border:0;background:transparent;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.switch{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.switch input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+
+/* ---------- Zeichenraster ---------- */
+.charset{display:flex;flex-direction:column;gap:12px}
+.charset h3{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.chargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:5px;margin-top:6px}
+.gl{position:relative;aspect-ratio:1;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;font-family:var(--f-mono);font-size:15px;color:var(--muted);cursor:pointer;transition:background .1s,border-color .1s}
+.gl:hover{border-color:var(--accent);color:var(--ink)}
+.gl.has{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+:root[data-theme="dark"] .gl.has,:root:not([data-theme="light"]) .gl.has{color:var(--ink)}
+.gl.cur{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);color:var(--ink)}
+.gl .n{position:absolute;right:2px;bottom:1px;font-size:8.5px;color:var(--accent);opacity:.8}
+
+/* ---------- Zeichenfläche ---------- */
+.draw-wrap{display:flex;flex-direction:column;gap:12px;align-items:center}
+.draw-head{display:flex;align-items:center;gap:14px;width:100%;flex-wrap:wrap}
+.cur-char{font-family:var(--f-mono);font-size:30px;font-weight:600;line-height:1;padding:8px 16px;background:var(--accent-soft);color:var(--accent);border-radius:9px;min-width:62px;text-align:center}
+:root[data-theme="dark"] .cur-char,:root:not([data-theme="light"]) .cur-char{color:var(--ink)}
+.cur-meta{display:flex;flex-direction:column;gap:1px}
+.cur-meta b{font-size:14px;font-weight:600}
+.cur-meta span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+canvas.pad{width:100%;max-width:620px;aspect-ratio:1.55;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);touch-action:none;cursor:crosshair;display:block}
+.variants{display:flex;gap:7px;flex-wrap:wrap;align-items:center;min-height:34px}
+.variants .vchip{position:relative;width:44px;height:44px;background:var(--paper);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.variants .vchip canvas{width:100%;height:100%;display:block}
+.variants .vchip button{position:absolute;top:1px;right:1px;width:15px;height:15px;padding:0;display:grid;place-items:center;border:0;border-radius:4px;background:rgba(20,22,28,.62);color:#fff;font-size:11px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s}
+.variants .vchip:hover button{opacity:1}
+.empty-note{font-size:12.5px;color:var(--muted)}
+
+/* ---------- Papiervorschau ---------- */
+.paper-stage{background:var(--sunken);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;justify-content:safe center;overflow:auto;max-height:74vh}
+.paper-stage>canvas{margin:auto}
+canvas.sheet{max-width:100%;height:auto;box-shadow:var(--shadow);border-radius:2px;background-image:linear-gradient(45deg,#dcdfe6 25%,transparent 25%,transparent 75%,#dcdfe6 75%),linear-gradient(45deg,#dcdfe6 25%,transparent 25%,transparent 75%,#dcdfe6 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+
+/* ---------- Hinweise ---------- */
+.note{display:flex;gap:9px;padding:10px 12px;border-radius:8px;font-size:12.5px;line-height:1.45;border:1px solid transparent}
+.note b{font-weight:600}
+.note.info{background:var(--accent-soft);border-color:var(--line);color:var(--ink-2)}
+.note.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--ink-2)}
+.note.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ink-2)}
+.note .ic{font-family:var(--f-mono);font-weight:600;flex:none}
+.note code{font-family:var(--f-mono);font-size:11.5px;background:var(--sunken);padding:1px 5px;border-radius:4px}
+
+/* ---------- Scan ---------- */
+.scan-stage{position:relative;background:var(--sunken);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:grid;place-items:center;min-height:320px}
+.scan-stage canvas{max-width:100%;display:block;touch-action:none;cursor:grab}
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:5px}
+.preview-grid .pv{position:relative;aspect-ratio:1;background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.preview-grid .pv canvas{width:100%;height:100%;display:block}
+.preview-grid .pv i{position:absolute;left:2px;top:0;font-family:var(--f-mono);font-size:8.5px;font-style:normal;color:#8a8f9c}
+.preview-grid .pv.off{opacity:.28}
+.preview-grid .pv.off::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(120,120,120,.25) 4px,rgba(120,120,120,.25) 8px)}
+
+/* ---------- Anleitung ---------- */
+.guide{max-width:760px;display:flex;flex-direction:column;gap:2px}
+.guide-step{display:grid;grid-template-columns:30px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.guide-step:last-child{border-bottom:0}
+.guide-step .n{font-family:var(--f-mono);font-size:12px;font-weight:600;width:26px;height:26px;display:grid;place-items:center;border-radius:7px;background:var(--accent-soft);color:var(--accent)}
+:root[data-theme="dark"] .guide-step .n,:root:not([data-theme="light"]) .guide-step .n{color:var(--ink)}
+.guide-step h3{font-size:14px;margin-bottom:3px}
+.guide-step p{margin:0;color:var(--ink-2);font-size:13px}
+kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--surface-2);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;white-space:nowrap}
+.faq{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.faq div>b{display:block;font-size:13px;margin-bottom:2px}
+.faq div>p{margin:0;font-size:12.5px;color:var(--ink-2)}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:90;padding:10px 16px;background:var(--ink);color:var(--bg);border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-in">
+    <div class="brand">
+      <h1>Schriftlabor</h1>
+      <span class="sub">Text&nbsp;→&nbsp;deine Handschrift&nbsp;→&nbsp;OneNote</span>
+    </div>
+    <div class="profile-chip">
+      <span class="nm" id="profName">Demo-Handschrift</span>
+      <div class="meter"><i id="profMeter"></i></div>
+      <span class="ct" id="profCount">0/0</span>
+    </div>
+    <div class="row">
+      <button class="btn sm" id="btnSave">Profil sichern</button>
+      <button class="btn sm" id="btnLoad">Profil laden</button>
+      <button class="btn sm ghost" id="btnTheme" title="Hell / dunkel">◐</button>
+      <input type="file" id="fileProfile" accept="application/json,.json" hidden>
+    </div>
+  </div>
+  <nav class="steps" role="tablist">
+    <button class="step" role="tab" aria-selected="true" data-tab="erfassen"><span class="no">1</span>Handschrift erfassen</button>
+    <button class="step" role="tab" aria-selected="false" data-tab="schreiben"><span class="no">2</span>Text schreiben</button>
+    <button class="step" role="tab" aria-selected="false" data-tab="onenote"><span class="no">3</span>Ab nach OneNote</button>
+  </nav>
+</div>
+
+<main>
+
+<!-- ============ 1 · ERFASSEN ============ -->
+<section class="panel" id="panel-erfassen">
+  <div class="row" style="margin-bottom:16px">
+    <div class="seg" id="capMode">
+      <button data-mode="draw" aria-pressed="true">Direkt schreiben</button>
+      <button data-mode="scan" aria-pressed="false">Blatt scannen</button>
+    </div>
+    <span class="empty-note" id="capModeHint">Mit Stift, Finger oder Maus jedes Zeichen einmal schreiben.</span>
+    <span class="grow"></span>
+    <button class="btn sm ghost" id="btnDemo">Demo-Handschrift laden</button>
+    <button class="btn sm ghost" id="btnReset">Alles löschen</button>
+  </div>
+
+  <!-- Modus: zeichnen -->
+  <div class="split" id="modeDraw">
+    <div class="card">
+      <header><h2>Zeichensatz</h2><span class="hint" id="setCount">0/0</span></header>
+      <div class="body charset" id="charsetHost"></div>
+    </div>
+    <div class="card">
+      <header>
+        <h2>Zeichenfläche</h2>
+        <span class="hint">Grundlinie einhalten, sonst tanzt die Zeile</span>
+      </header>
+      <div class="body draw-wrap">
+        <div class="draw-head">
+          <div class="cur-char" id="curChar">a</div>
+          <div class="cur-meta">
+            <b id="curLabel">Kleinbuchstabe a</b>
+            <span id="curInfo">noch keine Variante</span>
+          </div>
+          <span class="grow"></span>
+          <button class="btn sm" id="btnPrev">← zurück</button>
+          <button class="btn sm" id="btnSkip">weiter →</button>
+        </div>
+        <canvas class="pad" id="pad" width="1240" height="800"></canvas>
+        <div class="row" style="width:100%">
+          <button class="btn primary" id="btnKeep">Übernehmen &amp; weiter</button>
+          <button class="btn" id="btnUndo">Letzter Strich zurück</button>
+          <button class="btn ghost" id="btnClear">Fläche leeren</button>
+          <span class="grow"></span>
+          <label class="switch" title="Nach dem Übernehmen automatisch zum nächsten fehlenden Zeichen springen">
+            <input type="checkbox" id="chkAuto" checked> Auto-Weiter
+          </label>
+        </div>
+        <div class="row" style="width:100%;align-items:flex-start">
+          <div style="flex:1">
+            <div class="lb" style="font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Varianten dieses Zeichens</div>
+            <div class="variants" id="variantList"><span class="empty-note">Mehrere Varianten pro Zeichen = deutlich echter aussehendes Ergebnis. Zwei bis drei reichen.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modus: scannen -->
+  <div id="modeScan" hidden class="stack">
+    <div class="note info"><span class="ic">i</span><span><b>Papierweg:</b> Vorlage drucken, mit deinem echten Stift ausfüllen, abfotografieren, hochladen. Ergebnis wirkt echter als gemalte Zeichen, dafür musst du das Foto einmal an den vier Ecken ausrichten.</span></div>
+    <div class="split">
+      <div class="card">
+        <header><h2>Ablauf</h2></header>
+        <div class="body stack">
+          <div class="stack" style="gap:8px">
+            <b style="font-size:13px">1 · Vorlage drucken</b>
+            <p style="margin:0;font-size:12.5px;color:var(--ink-2)">A4, ohne Skalierung („Tatsächliche Größe“). Jede Zelle hat vier Hilfslinien: Ober-, Mittel-, Grund- und Unterlinie. Die Grundlinie ist die kräftige.</p>
+            <div class="row">
+              <button class="btn" id="btnTemplate">Vorlage als PNG</button>
+              <button class="btn ghost" id="btnTemplatePrint">Drucken</button>
+            </div>
+          </div>
+          <hr style="border:0;border-top:1px solid var(--line);margin:2px 0">
+          <div class="stack" style="gap:8px">
+            <b style="font-size:13px">2 · Foto hochladen</b>
+            <p style="margin:0;font-size:12.5px;color:var(--ink-2)">Gleichmäßiges Licht, kein Schatten quer über dem Blatt. Leichte Schräglage ist egal, die rechnet das Tool raus.</p>
+            <input type="file" id="fileScan" accept="image/*">
+          </div>
+          <hr style="border:0;border-top:1px solid var(--line);margin:2px 0">
+          <div class="stack" style="gap:10px">
+            <b style="font-size:13px">3 · Ecken setzen &amp; Schwelle justieren</b>
+            <p style="margin:0;font-size:12.5px;color:var(--ink-2)">Die vier Punkte genau auf die schwarzen Eckquadrate ziehen.</p>
+            <label class="fld"><span class="lb">Schwarzwert <span class="val" id="thrVal">62 %</span></span>
+              <input type="range" id="thr" min="30" max="88" value="62"></label>
+            <label class="switch"><input type="checkbox" id="chkTrimEdges" checked> Zellenrand beschneiden (frisst Rasterlinien weg)</label>
+            <button class="btn primary" id="btnExtract" disabled>Zeichen auslesen</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <header><h2 id="scanTitle">Foto ausrichten</h2><span class="hint" id="scanHint">noch kein Bild geladen</span></header>
+        <div class="body stack">
+          <div class="scan-stage" id="scanStage"><span class="empty-note" style="padding:40px">Hier erscheint dein Foto.</span></div>
+          <div id="extractResult" hidden class="stack">
+            <div class="row">
+              <b style="font-size:13px">Gefundene Zeichen</b>
+              <span class="empty-note" id="extractCount"></span>
+              <span class="grow"></span>
+              <button class="btn sm ghost" id="btnPvAll">alle an</button>
+              <button class="btn sm ghost" id="btnPvNone">alle aus</button>
+              <button class="btn primary sm" id="btnApplyScan">Übernehmen</button>
+            </div>
+            <p class="empty-note" style="margin:0">Klick auf ein Kästchen schaltet es ab, falls Kaffeefleck statt Buchstabe. Leere Zellen sind schon aussortiert.</p>
+            <div class="preview-grid" id="pvGrid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · SCHREIBEN ============ -->
+<section class="panel" id="panel-schreiben" hidden>
+  <div class="split">
+    <div class="stack">
+      <div class="card">
+        <header><h2>Text</h2><span class="hint" id="txtCount">0 Zeichen</span></header>
+        <div class="body stack">
+          <textarea id="text" spellcheck="false"></textarea>
+          <div id="missingBox"></div>
+        </div>
+      </div>
+      <div class="card">
+        <header><h2>Schriftbild</h2><button class="btn sm ghost" id="btnReroll" style="margin-left:auto">neu würfeln</button></header>
+        <div class="body stack">
+          <label class="fld"><span class="lb">Schriftgröße <span class="val" id="vSize">34 px</span></span><input type="range" id="size" min="14" max="90" value="34"></label>
+          <label class="fld"><span class="lb">Zeilenabstand <span class="val" id="vLead">1,75</span></span><input type="range" id="lead" min="100" max="320" value="175"></label>
+          <label class="fld"><span class="lb">Zeichenabstand <span class="val" id="vTrack">0,02</span></span><input type="range" id="track" min="-12" max="30" value="2"></label>
+          <label class="fld"><span class="lb">Wortabstand <span class="val" id="vWord">0,32</span></span><input type="range" id="word" min="10" max="80" value="32"></label>
+          <label class="fld"><span class="lb">Neigung <span class="val" id="vSlant">0°</span></span><input type="range" id="slant" min="-8" max="22" value="0"></label>
+          <label class="fld"><span class="lb">Unruhe <span class="val" id="vJit">45 %</span></span><input type="range" id="jit" min="0" max="130" value="45"></label>
+          <label class="fld"><span class="lb">Strichstärke <span class="val" id="vWeight">1,0×</span></span><input type="range" id="weight" min="40" max="220" value="100"></label>
+        </div>
+      </div>
+      <div class="card">
+        <header><h2>Blatt</h2></header>
+        <div class="body stack">
+          <div class="row">
+            <label class="fld grow"><span class="lb">Tinte</span>
+              <div class="row"><input type="color" id="ink" value="#1b2a6b">
+              <select id="inkPreset" style="flex:1">
+                <option value="#1b2a6b">Füller-Blau</option>
+                <option value="#14161a">Schwarz</option>
+                <option value="#2f3a4a">Bleistift-Grau</option>
+                <option value="#7a1220">Rotstift</option>
+                <option value="custom">eigene Farbe</option>
+              </select></div>
+            </label>
+          </div>
+          <label class="fld"><span class="lb">Hintergrund</span>
+            <select id="bg">
+              <option value="white">Weiß (sicher zum Einfügen)</option>
+              <option value="transparent">Transparent (nur für Download)</option>
+              <option value="lined">Liniert</option>
+              <option value="squared">Kariert</option>
+            </select></label>
+          <label class="fld"><span class="lb">Blattbreite <span class="val" id="vWidth">900 px</span></span><input type="range" id="width" min="360" max="2200" step="20" value="900"></label>
+          <label class="fld"><span class="lb">Rand <span class="val" id="vPad">28 px</span></span><input type="range" id="marg" min="0" max="120" value="28"></label>
+          <label class="switch"><input type="checkbox" id="chkHiDpi" checked> Doppelte Auflösung (schärfer in OneNote)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <header>
+          <h2>Vorschau</h2>
+          <span class="hint" id="sheetInfo">–</span>
+        </header>
+        <div class="body stack">
+          <div class="paper-stage"><canvas class="sheet" id="sheet" width="900" height="400"></canvas></div>
+          <div class="row">
+            <button class="btn primary big" id="btnCopy">Als Bild kopieren</button>
+            <button class="btn big" id="btnPng">PNG herunterladen</button>
+            <span class="grow"></span>
+            <span class="empty-note" id="copyHint">danach in OneNote <kbd>Strg</kbd>+<kbd>V</kbd></span>
+          </div>
+          <div id="exportNote"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · ONENOTE ============ -->
+<section class="panel" id="panel-onenote" hidden>
+  <div class="split" style="grid-template-columns:minmax(0,1fr) minmax(280px,360px)">
+    <div class="card">
+      <header><h2>So landet der Text in OneNote</h2></header>
+      <div class="body">
+        <div class="guide">
+          <div class="guide-step"><span class="n">1</span><div>
+            <h3>Text schreiben lassen</h3>
+            <p>Schritt 2, Text eintippen, Regler nach Geschmack. Hintergrund auf <b>Weiß</b> lassen, wenn du kopieren willst.</p>
+          </div></div>
+          <div class="guide-step"><span class="n">2</span><div>
+            <h3>Als Bild kopieren</h3>
+            <p>Der Knopf legt ein PNG in die Zwischenablage. Funktioniert in Chrome und Edge; Firefox kann das nur eingeschränkt, da nimmst du den Download.</p>
+          </div></div>
+          <div class="guide-step"><span class="n">3</span><div>
+            <h3>In OneNote einfügen</h3>
+            <p>Cursor an die Stelle setzen, <kbd>Strg</kbd>+<kbd>V</kbd>. Das Bild sitzt dann als Objekt auf der Seite und lässt sich frei schieben und in der Größe ziehen.</p>
+          </div></div>
+          <div class="guide-step"><span class="n">4</span><div>
+            <h3>Alternativ per Datei</h3>
+            <p>PNG herunterladen und in OneNote über <b>Einfügen → Bilder</b> holen, oder die Datei direkt aus dem Explorer auf die Seite ziehen. Der Weg erhält auch echte Transparenz.</p>
+          </div></div>
+        </div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <header><h2>Fallstricke</h2></header>
+        <div class="body faq">
+          <div><b>Transparenz wird beim Einfügen schwarz</b><p>Die Windows-Zwischenablage verliert bei manchen Programmen den Alphakanal. Deshalb ist Weiß voreingestellt. Willst du echte Transparenz, nimm den PNG-Download und zieh die Datei rein.</p></div>
+          <div><b>Sieht in OneNote unscharf aus</b><p>„Doppelte Auflösung“ anlassen und das Bild in OneNote eher verkleinern als vergrößern. Ein Bild wird nie schärfer, als es gerendert wurde.</p></div>
+          <div><b>Dunkler Modus in OneNote</b><p>OneNote invertiert eingefügte Bilder nicht. Dunkle Tinte auf weißem Kasten bleibt weiß. Wenn dich das stört: Tinte hell wählen und Hintergrund transparent, dann per Datei einfügen.</p></div>
+          <div><b>Der Text ist nicht durchsuchbar</b><p>Stimmt, es ist ein Bild. OneNote führt allerdings OCR über eingefügte Bilder, tut sich mit Handschrift aber schwer. Für auffindbare Notizen schreib die Stichworte zusätzlich als normalen Text daneben.</p></div>
+          <div><b>Ich will echt tippen können, nicht Bilder einfügen</b><p>Dann brauchst du eine echte Schriftdatei aus deiner Handschrift. Calligraphr macht genau das (kostenlos für einen Zeichensatz), die TTF installierst du in Windows und wählst sie in OneNote aus. Nachteil: jeder Buchstabe sieht dann jedes Mal identisch aus, das hier wirkt lebendiger.</p></div>
+        </div>
+      </div>
+      <div class="card">
+        <header><h2>Profil sichern</h2></header>
+        <div class="body stack">
+          <p style="margin:0;font-size:12.5px;color:var(--ink-2)">Deine Handschrift liegt im Speicher dieses Browsers. Neuer Rechner, anderer Browser oder aufgeräumte Websitedaten heißt: weg. Sichere sie einmal als Datei.</p>
+          <div class="row"><button class="btn" id="btnSave2">Profil als Datei sichern</button><button class="btn ghost" id="btnLoad2">Profil laden</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   Schriftlabor
+   Metrik: 1 em = Abstand Grundlinie -> Oberlinie. y waechst nach unten,
+   Grundlinie liegt bei y = 0. Alle Glyphendaten sind in em gespeichert und
+   damit von jeder Pixelgroesse unabhaengig.
+   ========================================================================= */
+
+const M = { ASC:-1.0, XH:-0.53, BASE:0, DESC:0.33, SIDE:0.045 };
+
+const CHARSETS = [
+  { label:'Kleinbuchstaben', chars:'abcdefghijklmnopqrstuvwxyzäöüß' },
+  { label:'Großbuchstaben',  chars:'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ' },
+  { label:'Ziffern',         chars:'0123456789' },
+  { label:'Satzzeichen',     chars:'.,;:!?\'"()[]-–/&@€%+=*#§' }
+];
+const ALL_CHARS = CHARSETS.map(s => [...s.chars]).flat();
+const TPL_COLS = 8;
+const TPL_ROWS = Math.ceil(ALL_CHARS.length / TPL_COLS);
+
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v,a,b) => v<a?a:v>b?b:v;
+const round = (v,n=4) => Math.round(v*10**n)/10**n;
+
+function toast(msg, ms=2200){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), ms);
+}
+/* deterministischer Zufall, damit die Vorschau beim Reglerziehen ruhig bleibt */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+
+/* =========================== Zustand ==================================== */
+
+const state = {
+  profile: null,      // { name, glyphs: { "a":[variant,...] } }
+  current: 'a',       // aktuell erfasstes Zeichen
+  seed: 12345,
+  capMode: 'draw'
+};
+const STORE_KEY = 'schriftlabor.profil.v1';
+
+function emptyProfile(name='Meine Handschrift'){ return { v:1, name, demo:false, glyphs:{} }; }
+function variantsOf(ch){ return (state.profile && state.profile.glyphs[ch]) || []; }
+function glyphCount(){
+  if(!state.profile) return 0;
+  return Object.keys(state.profile.glyphs).filter(c=>state.profile.glyphs[c].length).length;
+}
+
+function saveLocal(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state.profile)); }
+  catch(e){ toast('Speicher voll — sichere das Profil als Datei.'); }
+}
+function loadLocal(){
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return null;
+    const p = JSON.parse(raw);
+    return (p && p.glyphs) ? p : null;
+  } catch(e){ return null; }
+}
+
+/* ==================== Glyphen erzeugen / normalisieren =================== */
+
+/** Strichzug-Glyphe aus Punkten in em-Koordinaten bauen. */
+function makeStrokeGlyph(strokes){
+  let minX=1e9, maxX=-1e9, minY=1e9, maxY=-1e9;
+  for(const st of strokes) for(let i=0;i<st.length;i+=3){
+    minX=Math.min(minX,st[i]); maxX=Math.max(maxX,st[i]);
+    minY=Math.min(minY,st[i+1]); maxY=Math.max(maxY,st[i+1]);
+  }
+  if(minX>maxX) return null;
+  const s = strokes.map(st=>{
+    const o = new Array(st.length);
+    for(let i=0;i<st.length;i+=3){ o[i]=round(st[i]-minX); o[i+1]=round(st[i+1]); o[i+2]=round(st[i+2],2); }
+    return o;
+  });
+  const w = round(maxX-minX);
+  return { t:'s', s, w, y0:round(minY), y1:round(maxY), adv:round(w + M.SIDE*2) };
+}
+
+/** Bild-Glyphe (aus dem Scan) aus einer Alphamaske bauen. */
+function makeImageGlyph(dataUrl, w, top, bottom){
+  return { t:'i', d:dataUrl, w:round(w), y0:round(top), y1:round(bottom), adv:round(w + M.SIDE*2) };
+}
+
+function addGlyph(ch, glyph){
+  if(!glyph) return;
+  if(state.profile.demo){                    // Demo weicht der echten Schrift
+    state.profile = emptyProfile();
+    cache.clear(); imgPool.clear();
+    toast('Demo verworfen — ab jetzt zählt deine Handschrift.', 3000);
+  }
+  if(!state.profile.glyphs[ch]) state.profile.glyphs[ch] = [];
+  state.profile.glyphs[ch].push(glyph);
+  if(state.profile.glyphs[ch].length > 6) state.profile.glyphs[ch].shift();
+  state.profile.demo = false;
+  cache.clear(); saveLocal(); refreshProfileUI();
+}
+
+/* ======================= Glyphen-Cache & Zeichnen ======================== */
+
+const cache = new Map();
+function cacheKey(ch,vi,size,color,weight){ return ch+'|'+vi+'|'+size+'|'+color+'|'+weight; }
+
+/** Rendert eine Glyphe einmal in ein Offscreen-Canvas und merkt sie sich. */
+function glyphCanvas(ch, vi, size, color, weight){
+  const key = cacheKey(ch,vi,size,color,weight);
+  const hit = cache.get(key); if(hit) return hit;
+  const g = variantsOf(ch)[vi]; if(!g) return null;
+
+  const ss = 2;                                   // Ueberabtastung fuer Drehung
+  const stroke = Math.max(1, size*0.052*weight);  // Basisstrichbreite in px
+  const padPx = Math.ceil(stroke*1.6 + 3);
+  const wPx = Math.ceil(g.w*size*ss) + padPx*2;
+  const hPx = Math.ceil((g.y1-g.y0)*size*ss) + padPx*2;
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(2,wPx); cv.height = Math.max(2,hPx);
+  const ctx = cv.getContext('2d');
+  const ox = padPx, oy = padPx - g.y0*size*ss;    // Ursprung: links / Grundlinie
+
+  if(g.t === 's'){
+    ctx.strokeStyle = color; ctx.lineCap='round'; ctx.lineJoin='round';
+    const sw = stroke*ss;
+    for(const st of g.s){
+      const n = st.length/3;
+      if(n === 1){
+        ctx.fillStyle = color; ctx.beginPath();
+        ctx.arc(ox+st[0]*size*ss, oy+st[1]*size*ss, sw*0.5, 0, 6.284); ctx.fill();
+        continue;
+      }
+      for(let i=1;i<n;i++){
+        const a=(i-1)*3, b=i*3;
+        ctx.lineWidth = sw*(0.55 + 0.85*((st[a+2]+st[b+2])*0.5));
+        ctx.beginPath();
+        ctx.moveTo(ox+st[a]*size*ss, oy+st[a+1]*size*ss);
+        ctx.lineTo(ox+st[b]*size*ss, oy+st[b+1]*size*ss);
+        ctx.stroke();
+      }
+    }
+  } else {
+    const img = imageOf(g);
+    if(img && img.complete && img.naturalWidth){
+      ctx.drawImage(img, ox, oy+g.y0*size*ss, g.w*size*ss, (g.y1-g.y0)*size*ss);
+      ctx.globalCompositeOperation = 'source-in';
+      ctx.fillStyle = color; ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+  const out = { cv, ss, ox, oy, adv:g.adv };
+  cache.set(key, out);
+  if(cache.size > 900) { const k = cache.keys().next().value; cache.delete(k); }
+  return out;
+}
+
+const imgPool = new Map();
+function imageOf(g){
+  let im = imgPool.get(g.d);
+  if(!im){
+    im = new Image(); im.src = g.d;
+    const done = ()=>{ cache.clear(); scheduleRender(); if(!$('#panel-erfassen').hidden) renderVariants(); };
+    im.decode ? im.decode().then(done).catch(()=>{}) : (im.onload = done);
+    imgPool.set(g.d, im);
+  }
+  return im;
+}
+
+/* ============================ Textsatz ================================== */
+
+function advanceOf(ch, opts){
+  const vs = variantsOf(ch);
+  if(ch === ' ') return opts.word;
+  if(!vs.length) return opts.missing ? 0.42 : 0;
+  return vs[0].adv + opts.track;
+}
+
+/** Text in Zeilen brechen. Woerter, die nie passen, werden hart getrennt. */
+function layout(text, maxEm, opts){
+  const lines = [];
+  const widthOf = w => { let a = 0; for(const c of w) a += advanceOf(c, opts); return a; };
+  const hardBreak = word => {
+    const parts = []; let cur = '', cw = 0;
+    for(const c of word){
+      const a = advanceOf(c, opts);
+      if(cur && cw + a > maxEm){ parts.push(cur); cur = ''; cw = 0; }
+      cur += c; cw += a;
+    }
+    if(cur) parts.push(cur);
+    return parts;
+  };
+  for(const para of text.replace(/\t/g,'    ').split('\n')){
+    if(!para.length){ lines.push(''); continue; }
+    let line = '', lineW = 0;
+    for(const word of para.split(' ')){
+      const ww = widthOf(word);
+      if(ww > maxEm){                                  // passt in keine Zeile
+        if(line){ lines.push(line); line = ''; lineW = 0; }
+        const parts = hardBreak(word);
+        for(let i=0;i<parts.length-1;i++) lines.push(parts[i]);
+        line = parts.length ? parts[parts.length-1] : '';
+        lineW = widthOf(line);
+        continue;
+      }
+      const sp = line ? opts.word : 0;
+      if(line && lineW + sp + ww > maxEm){ lines.push(line); line = word; lineW = ww; }
+      else { line += (line ? ' ' : '') + word; lineW += sp + ww; }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+/** Malt den Text auf ein Canvas. Gibt fehlende Zeichen zurueck. */
+function renderSheet(cv, text, o){
+  const dpr = o.hidpi ? 2 : 1;
+  const size = o.size;
+  const maxEm = (o.width - o.pad*2) / size;
+  const opts = { word:o.word, track:o.track, missing:true };
+  const lines = layout(text, Math.max(1,maxEm), opts);
+  const lineH = size * o.lead;
+  const height = Math.max(60, Math.round(o.pad*2 + lineH*Math.max(1,lines.length)));
+
+  cv.width = Math.round(o.width*dpr); cv.height = Math.round(height*dpr);
+  cv.style.width = o.width+'px'; cv.style.height = 'auto';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,o.width,height);
+
+  // Hintergrund
+  if(o.bg !== 'transparent'){
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,o.width,height);
+  }
+  if(o.bg === 'lined'){
+    ctx.strokeStyle = '#c3d3e8'; ctx.lineWidth = 1;
+    for(let i=0;i<lines.length;i++){
+      const y = Math.round(o.pad + lineH*(i+1) - size*0.02) + .5;
+      ctx.beginPath(); ctx.moveTo(o.pad*0.5,y); ctx.lineTo(o.width-o.pad*0.5,y); ctx.stroke();
+    }
+  } else if(o.bg === 'squared'){
+    const step = Math.max(10, size*0.55);
+    ctx.strokeStyle = '#cfe0f2'; ctx.lineWidth = 1;
+    for(let x=step;x<o.width;x+=step){ ctx.beginPath(); ctx.moveTo(Math.round(x)+.5,0); ctx.lineTo(Math.round(x)+.5,height); ctx.stroke(); }
+    for(let y=step;y<height;y+=step){ ctx.beginPath(); ctx.moveTo(0,Math.round(y)+.5); ctx.lineTo(o.width,Math.round(y)+.5); ctx.stroke(); }
+  }
+
+  const rnd = mulberry32(state.seed ^ hashStr(text.slice(0,400)));
+  const jit = o.jit, tanS = Math.tan(o.slant*Math.PI/180);
+  const missing = new Set();
+
+  for(let li=0; li<lines.length; li++){
+    const baseY = o.pad + lineH*(li+1) - size*0.28;
+    let x = o.pad;
+    const drift = (rnd()-0.5) * jit * size * 0.05;      // Zeile haengt leicht schief
+    const wobble = (rnd()-0.5) * jit * 0.006;
+    let ci = 0;
+    for(const ch of lines[li]){
+      ci++;
+      if(ch === ' '){ x += o.word*size*(1 + (rnd()-0.5)*jit*0.25); continue; }
+      const vs = variantsOf(ch);
+      if(!vs.length){ missing.add(ch); x += 0.42*size; continue; }
+      const vi = Math.floor(rnd()*vs.length);
+      const gc = glyphCanvas(ch, vi, size, o.ink, o.weight);
+      if(!gc){ x += 0.42*size; continue; }
+      const dx  = (rnd()-0.5)*jit*size*0.028;
+      const dy  = (rnd()-0.5)*jit*size*0.045 + drift + wobble*ci*size;
+      const rot = (rnd()-0.5)*jit*0.055;
+      const sc  = 1 + (rnd()-0.5)*jit*0.07;
+
+      ctx.save();
+      ctx.translate(x+dx, baseY+dy);
+      ctx.transform(1,0,-tanS,1,0,0);
+      ctx.rotate(rot);
+      ctx.scale(sc,sc);
+      ctx.drawImage(gc.cv, -gc.ox/gc.ss, -gc.oy/gc.ss, gc.cv.width/gc.ss, gc.cv.height/gc.ss);
+      ctx.restore();
+
+      x += (vs[vi].adv + o.track) * size * sc;
+    }
+  }
+  return { missing:[...missing], lines:lines.length, height };
+}
+
+/* ========================= Zeichenfläche ================================= */
+
+const pad = $('#pad'), pctx = pad.getContext('2d');
+const P = { EM:0, BASE:0, START:0 };
+function padMetrics(){
+  P.EM = pad.height*0.80/(M.DESC - M.ASC);
+  P.BASE = pad.height*0.10 + P.EM;
+  P.START = pad.width*0.12;
+}
+padMetrics();
+
+let strokes = [];        // aktueller Entwurf, Punkte in Canvas-Pixeln
+let cur = null, drawing = false, lastPt = null, pSmooth = 0.7;
+
+function drawRules(){
+  const w = pad.width, h = pad.height;
+  pctx.clearRect(0,0,w,h);
+  pctx.fillStyle = '#ffffff'; pctx.fillRect(0,0,w,h);
+  const lines = [
+    [P.BASE + M.ASC*P.EM, 'Oberlinie',  '#dfe4ee', [6,7]],
+    [P.BASE + M.XH*P.EM,  'x-Höhe',     '#dfe4ee', [6,7]],
+    [P.BASE,              'Grundlinie', '#9db2d4', null],
+    [P.BASE + M.DESC*P.EM,'Unterlinie', '#dfe4ee', [6,7]]
+  ];
+  pctx.font = '500 20px ui-monospace, monospace';
+  for(const [y,label,col,dash] of lines){
+    pctx.strokeStyle = col; pctx.lineWidth = dash?2:2.5;
+    pctx.setLineDash(dash||[]);
+    pctx.beginPath(); pctx.moveTo(0,y); pctx.lineTo(w,y); pctx.stroke();
+    pctx.setLineDash([]);
+    pctx.fillStyle = '#aab3c4'; pctx.fillText(label, 12, y-9);
+  }
+  pctx.strokeStyle = '#e8ecf3'; pctx.lineWidth = 2; pctx.setLineDash([4,8]);
+  pctx.beginPath(); pctx.moveTo(P.START,0); pctx.lineTo(P.START,h); pctx.stroke();
+  pctx.setLineDash([]);
+}
+
+function paintStrokes(){
+  drawRules();
+  pctx.strokeStyle = '#1b2a6b'; pctx.lineCap='round'; pctx.lineJoin='round';
+  const base = P.EM*0.052;
+  for(const st of strokes){
+    if(st.length < 2){
+      if(st.length === 1){ pctx.fillStyle='#1b2a6b'; pctx.beginPath(); pctx.arc(st[0].x,st[0].y,base*0.5,0,6.284); pctx.fill(); }
+      continue;
+    }
+    for(let i=1;i<st.length;i++){
+      pctx.lineWidth = base*(0.55+0.85*((st[i-1].p+st[i].p)*0.5));
+      pctx.beginPath(); pctx.moveTo(st[i-1].x,st[i-1].y); pctx.lineTo(st[i].x,st[i].y); pctx.stroke();
+    }
+  }
+}
+
+function padPos(e){
+  const r = pad.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*pad.width/r.width, y:(e.clientY-r.top)*pad.height/r.height };
+}
+pad.addEventListener('pointerdown', e=>{
+  e.preventDefault(); pad.setPointerCapture(e.pointerId);
+  drawing = true; cur = []; strokes.push(cur);
+  const p = padPos(e); pSmooth = pressureOf(e, p, true);
+  cur.push({x:p.x,y:p.y,p:pSmooth}); lastPt = {...p, t:performance.now()};
+});
+pad.addEventListener('pointermove', e=>{
+  if(!drawing) return;
+  e.preventDefault();
+  const evts = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for(const ev of evts){
+    const p = padPos(ev);
+    const d = Math.hypot(p.x-cur[cur.length-1].x, p.y-cur[cur.length-1].y);
+    if(d < pad.width*0.004) continue;
+    cur.push({x:p.x, y:p.y, p:pressureOf(ev,p,false)});
+  }
+  paintStrokes();
+});
+function endStroke(){
+  if(!drawing) return;
+  drawing = false;
+  if(cur && cur.length) smoothStroke(cur);
+  paintStrokes(); updateCurInfo();
+}
+pad.addEventListener('pointerup', endStroke);
+pad.addEventListener('pointercancel', endStroke);
+pad.addEventListener('pointerleave', endStroke);
+
+function pressureOf(e, p, first){
+  let v;
+  if(e.pointerType === 'pen' && e.pressure > 0 && e.pressure < 1) v = 0.25 + e.pressure*0.9;
+  else {
+    const now = performance.now();
+    if(first || !lastPt){ v = 0.85; }
+    else {
+      const dt = Math.max(8, now-lastPt.t);
+      const sp = Math.hypot(p.x-lastPt.x, p.y-lastPt.y)/dt;   // px pro ms
+      v = clamp(1.05 - sp*0.28, 0.4, 1);
+    }
+    lastPt = {x:p.x, y:p.y, t:now};
+  }
+  pSmooth = pSmooth*0.65 + v*0.35;
+  return clamp(pSmooth, 0.25, 1.15);
+}
+/** Chaikin-Glättung, damit gemalte Zittrigkeit nicht zur Absicht wird. */
+function smoothStroke(st){
+  if(st.length < 3) return;
+  const out = [st[0]];
+  for(let i=0;i<st.length-1;i++){
+    const a=st[i], b=st[i+1];
+    out.push({x:a.x*0.75+b.x*0.25, y:a.y*0.75+b.y*0.25, p:a.p*0.75+b.p*0.25});
+    out.push({x:a.x*0.25+b.x*0.75, y:a.y*0.25+b.y*0.75, p:a.p*0.25+b.p*0.75});
+  }
+  out.push(st[st.length-1]);
+  st.length = 0; st.push(...out);
+}
+
+function padToGlyph(){
+  const valid = strokes.filter(s=>s.length);
+  if(!valid.length) return null;
+  const em = valid.map(st=>{
+    const a = new Array(st.length*3);
+    st.forEach((pt,i)=>{ a[i*3]=pt.x/P.EM; a[i*3+1]=(pt.y-P.BASE)/P.EM; a[i*3+2]=pt.p; });
+    return a;
+  });
+  return makeStrokeGlyph(em);
+}
+
+/* ===================== Zeichensatz-Liste & Varianten ===================== */
+
+function buildCharset(){
+  const host = $('#charsetHost'); host.innerHTML = '';
+  for(const set of CHARSETS){
+    const wrap = document.createElement('div');
+    const h = document.createElement('h3'); h.textContent = set.label;
+    const grid = document.createElement('div'); grid.className = 'chargrid';
+    for(const ch of set.chars){
+      const b = document.createElement('button');
+      b.className = 'gl'; b.dataset.ch = ch; b.type = 'button';
+      b.innerHTML = '<span>'+(ch==="'"?'&#39;':ch==='"'?'&quot;':ch==='&'?'&amp;':ch==='<'?'&lt;':ch)+'</span><i class="n"></i>';
+      b.addEventListener('click', ()=>selectChar(ch));
+      grid.appendChild(b);
+    }
+    wrap.appendChild(h); wrap.appendChild(grid); host.appendChild(wrap);
+  }
+  refreshCharset();
+}
+function refreshCharset(){
+  for(const b of $$('.gl')){
+    const n = variantsOf(b.dataset.ch).length;
+    b.classList.toggle('has', n>0);
+    b.classList.toggle('cur', b.dataset.ch === state.current);
+    b.querySelector('.n').textContent = n>1 ? n : '';
+  }
+  $('#setCount').textContent = glyphCount()+'/'+ALL_CHARS.length;
+}
+function charLabel(ch){
+  if(/[a-zäöüß]/.test(ch)) return 'Kleinbuchstabe '+ch;
+  if(/[A-ZÄÖÜ]/.test(ch))  return 'Großbuchstabe '+ch;
+  if(/[0-9]/.test(ch))     return 'Ziffer '+ch;
+  return 'Zeichen '+ch;
+}
+function selectChar(ch){
+  state.current = ch; strokes = []; drawRules();
+  $('#curChar').textContent = ch;
+  $('#curLabel').textContent = charLabel(ch);
+  refreshCharset(); updateCurInfo(); renderVariants();
+}
+function updateCurInfo(){
+  const n = variantsOf(state.current).length;
+  const dirty = strokes.some(s=>s.length);
+  $('#curInfo').textContent = dirty ? 'Entwurf auf der Fläche' : (n ? n+' Variante'+(n>1?'n':'')+' gespeichert' : 'noch keine Variante');
+}
+function renderVariants(){
+  const host = $('#variantList'); host.innerHTML = '';
+  const vs = variantsOf(state.current);
+  if(!vs.length){
+    host.innerHTML = '<span class="empty-note">Mehrere Varianten pro Zeichen = deutlich echter aussehendes Ergebnis. Zwei bis drei reichen.</span>';
+    return;
+  }
+  vs.forEach((g,i)=>{
+    const chip = document.createElement('div'); chip.className = 'vchip';
+    const c = document.createElement('canvas'); c.width = 88; c.height = 88;
+    const cx = c.getContext('2d');
+    const gc = glyphCanvas(state.current, i, 46, '#1b2a6b', 1);
+    if(gc){
+      const w = gc.cv.width/gc.ss, h = gc.cv.height/gc.ss;
+      const k = Math.min(76/Math.max(1,w), 76/Math.max(1,h), 1.6);
+      cx.drawImage(gc.cv, (88-w*k)/2, (88-h*k)/2, w*k, h*k);
+    }
+    const del = document.createElement('button');
+    del.type='button'; del.textContent='×'; del.title='Variante löschen';
+    del.addEventListener('click', ()=>{
+      vs.splice(i,1);
+      if(!vs.length) delete state.profile.glyphs[state.current];
+      cache.clear(); saveLocal(); refreshProfileUI(); renderVariants();
+    });
+    chip.appendChild(c); chip.appendChild(del); host.appendChild(chip);
+  });
+}
+function nextMissing(from){
+  const i = ALL_CHARS.indexOf(from);
+  for(let k=1;k<=ALL_CHARS.length;k++){
+    const ch = ALL_CHARS[(i+k)%ALL_CHARS.length];
+    if(!variantsOf(ch).length) return ch;
+  }
+  return ALL_CHARS[(i+1)%ALL_CHARS.length];
+}
+
+$('#btnKeep').addEventListener('click', ()=>{
+  const g = padToGlyph();
+  if(!g){ toast('Erst was auf die Fläche schreiben.'); return; }
+  addGlyph(state.current, g);
+  const nxt = $('#chkAuto').checked ? nextMissing(state.current) : state.current;
+  strokes = [];
+  selectChar(nxt);
+  toast('Gespeichert · ' + glyphCount() + ' von ' + ALL_CHARS.length + ' Zeichen');
+});
+$('#btnUndo').addEventListener('click', ()=>{ strokes.pop(); paintStrokes(); updateCurInfo(); });
+$('#btnClear').addEventListener('click', ()=>{ strokes = []; drawRules(); updateCurInfo(); });
+$('#btnSkip').addEventListener('click', ()=>{ strokes=[]; selectChar(ALL_CHARS[(ALL_CHARS.indexOf(state.current)+1)%ALL_CHARS.length]); });
+$('#btnPrev').addEventListener('click', ()=>{ strokes=[]; selectChar(ALL_CHARS[(ALL_CHARS.indexOf(state.current)-1+ALL_CHARS.length)%ALL_CHARS.length]); });
+
+/* ============================ Vorlage =================================== */
+
+const TPL = { w:1654, h:2339, margin:110, header:196 };
+function tplGeom(){
+  const x0 = TPL.margin, y0 = TPL.margin + TPL.header;
+  const x1 = TPL.w - TPL.margin, y1 = TPL.h - TPL.margin;
+  return { x0, y0, x1, y1, cw:(x1-x0)/TPL_COLS, ch:(y1-y0)/TPL_ROWS };
+}
+function cellRules(top, h){
+  const em = h*0.66/(M.DESC - M.ASC);
+  const asc = top + h*0.17;
+  const base = asc + em;
+  return { em, asc, base, xh:base + M.XH*em, desc:base + M.DESC*em };
+}
+function buildTemplate(){
+  const cv = document.createElement('canvas');
+  cv.width = TPL.w; cv.height = TPL.h;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0,0,TPL.w,TPL.h);
+  const g = tplGeom();
+
+  c.fillStyle = '#111';
+  c.font = '600 40px Archivo, Arial, sans-serif';
+  c.fillText('Handschrift-Vorlage', TPL.margin, 96);
+  c.fillStyle = '#666'; c.font = '400 25px Archivo, Arial, sans-serif';
+  c.fillText('Jedes Zeichen einmal in seine Zelle schreiben. Auf der Grundlinie aufsetzen (die kräftige Linie),', TPL.margin, 146);
+  c.fillText('Zellenränder nicht berühren. Danach abfotografieren und im Schriftlabor hochladen.', TPL.margin, 182);
+
+  // Raster
+  for(let r=0;r<TPL_ROWS;r++) for(let col=0;col<TPL_COLS;col++){
+    const i = r*TPL_COLS+col; if(i >= ALL_CHARS.length) continue;
+    const x = g.x0 + col*g.cw, y = g.y0 + r*g.ch;
+    const R = cellRules(y, g.ch);
+    c.strokeStyle = '#dfe3ea'; c.lineWidth = 1.5;
+    c.strokeRect(Math.round(x)+.5, Math.round(y)+.5, Math.round(g.cw), Math.round(g.ch));
+    c.strokeStyle = '#e6eaf1'; c.lineWidth = 1.4; c.setLineDash([7,9]);
+    for(const yy of [R.asc, R.xh, R.desc]){
+      c.beginPath(); c.moveTo(x+7, yy); c.lineTo(x+g.cw-7, yy); c.stroke();
+    }
+    c.setLineDash([]);
+    c.strokeStyle = '#ccd2dc'; c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(x+7, R.base); c.lineTo(x+g.cw-7, R.base); c.stroke();
+    // Zell-Label hell und ganz in die Ecke: der Randbeschnitt frisst es weg
+    c.fillStyle = '#c9ced8'; c.font = '500 19px "IBM Plex Mono", monospace';
+    c.fillText(ALL_CHARS[i], x+4, y+19);
+  }
+  // Eckmarken: die Mittelpunkte definieren das Raster
+  c.fillStyle = '#000';
+  for(const [mx,my] of [[g.x0,g.y0],[g.x1,g.y0],[g.x1,g.y1],[g.x0,g.y1]]) c.fillRect(mx-17, my-17, 34, 34);
+  c.fillStyle = '#888'; c.font = '400 21px "IBM Plex Mono", monospace';
+  c.fillText('Ecken beim Fotografieren mit aufs Bild nehmen', g.x0, g.y1+44);
+  return cv;
+}
+function downloadCanvas(cv, name){
+  cv.toBlob(b=>{
+    const u = URL.createObjectURL(b), a = document.createElement('a');
+    a.href = u; a.download = name; document.body.appendChild(a); a.click();
+    a.remove(); setTimeout(()=>URL.revokeObjectURL(u), 4000);
+  }, 'image/png');
+}
+$('#btnTemplate').addEventListener('click', ()=>{ downloadCanvas(buildTemplate(),'handschrift-vorlage.png'); toast('Vorlage gespeichert'); });
+$('#btnTemplatePrint').addEventListener('click', ()=>{
+  const url = buildTemplate().toDataURL('image/png');
+  const w = window.open('', '_blank');
+  if(!w){ toast('Popup blockiert — nimm den PNG-Download.'); return; }
+  w.document.write('<title>Handschrift-Vorlage</title><style>@page{size:A4;margin:0}body{margin:0}img{width:100%;display:block}</style><img src="'+url+'" onload="window.print()">');
+  w.document.close();
+});
+
+/* ======================== Scan: Ecken setzen ============================= */
+
+const scan = { img:null, cv:null, pts:null, scale:1, drag:-1, cells:null, on:null };
+
+$('#fileScan').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const im = new Image();
+  im.onload = ()=>{
+    scan.img = im;
+    scan.pts = [[im.width*.12,im.height*.12],[im.width*.88,im.height*.12],[im.width*.88,im.height*.88],[im.width*.12,im.height*.88]];
+    setupScanCanvas();
+    $('#btnExtract').disabled = false;
+    $('#scanHint').textContent = im.width+'×'+im.height+' px';
+    $('#extractResult').hidden = true;
+  };
+  im.onerror = ()=>toast('Das Bild ließ sich nicht laden.');
+  im.src = URL.createObjectURL(f);
+});
+
+function setupScanCanvas(){
+  const host = $('#scanStage'); host.innerHTML = '';
+  const maxW = Math.min(880, host.clientWidth-2 || 880);
+  scan.scale = Math.min(maxW/scan.img.width, 620/scan.img.height, 1);
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(scan.img.width*scan.scale);
+  cv.height = Math.round(scan.img.height*scan.scale);
+  host.appendChild(cv); scan.cv = cv;
+  cv.addEventListener('pointerdown', onScanDown);
+  cv.addEventListener('pointermove', onScanMove);
+  cv.addEventListener('pointerup', ()=>{ scan.drag = -1; paintScan(); });
+  cv.addEventListener('pointercancel', ()=>{ scan.drag = -1; paintScan(); });
+  paintScan();
+}
+function paintScan(hover){
+  const cv = scan.cv, c = cv.getContext('2d'), s = scan.scale;
+  c.clearRect(0,0,cv.width,cv.height);
+  c.drawImage(scan.img, 0, 0, cv.width, cv.height);
+  const P4 = scan.pts.map(p=>[p[0]*s, p[1]*s]);
+  c.strokeStyle = 'rgba(44,63,176,.95)'; c.lineWidth = 2; c.setLineDash([7,5]);
+  c.beginPath(); c.moveTo(P4[0][0],P4[0][1]);
+  for(let i=1;i<4;i++) c.lineTo(P4[i][0],P4[i][1]);
+  c.closePath(); c.stroke(); c.setLineDash([]);
+  P4.forEach(([x,y],i)=>{
+    c.beginPath(); c.arc(x,y,11,0,6.284);
+    c.fillStyle = scan.drag===i ? 'rgba(44,63,176,.95)' : 'rgba(255,255,255,.92)';
+    c.fill(); c.strokeStyle = '#2c3fb0'; c.lineWidth = 2.5; c.stroke();
+    c.fillStyle = scan.drag===i ? '#fff' : '#2c3fb0';
+    c.font = '600 11px "IBM Plex Mono", monospace'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(String(i+1), x, y+.5); c.textAlign='start'; c.textBaseline='alphabetic';
+  });
+  if(scan.drag >= 0){                                    // Lupe zum genauen Treffen
+    const [px,py] = scan.pts[scan.drag];
+    const z = 3.2, r = 62;
+    const lx = scan.cv.width-r*2-14, ly = 14;
+    c.save();
+    c.beginPath(); c.arc(lx+r, ly+r, r, 0, 6.284); c.clip();
+    c.fillStyle='#fff'; c.fillRect(lx,ly,r*2,r*2);
+    c.drawImage(scan.img, px-r/z, py-r/z, (r*2)/z, (r*2)/z, lx, ly, r*2, r*2);
+    c.strokeStyle='#2c3fb0'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(lx+r-9,ly+r); c.lineTo(lx+r+9,ly+r); c.moveTo(lx+r,ly+r-9); c.lineTo(lx+r,ly+r+9); c.stroke();
+    c.restore();
+    c.beginPath(); c.arc(lx+r,ly+r,r,0,6.284); c.strokeStyle='#2c3fb0'; c.lineWidth=2; c.stroke();
+  }
+}
+function scanPos(e){
+  const r = scan.cv.getBoundingClientRect();
+  return [(e.clientX-r.left)*scan.cv.width/r.width/scan.scale, (e.clientY-r.top)*scan.cv.height/r.height/scan.scale];
+}
+function onScanDown(e){
+  e.preventDefault(); scan.cv.setPointerCapture(e.pointerId);
+  const [x,y] = scanPos(e);
+  let best = -1, bd = 40/scan.scale;
+  scan.pts.forEach((p,i)=>{ const d = Math.hypot(p[0]-x,p[1]-y); if(d<bd){ bd=d; best=i; } });
+  scan.drag = best; if(best>=0) paintScan();
+}
+function onScanMove(e){
+  if(scan.drag < 0) return;
+  e.preventDefault();
+  const [x,y] = scanPos(e);
+  scan.pts[scan.drag] = [clamp(x,0,scan.img.width), clamp(y,0,scan.img.height)];
+  paintScan();
+}
+
+/* ==================== Entzerrung & Zeichenextraktion ==================== */
+
+/** Homographie Ziel(u,v) -> Quelle(x,y) aus vier Punktpaaren. */
+function homography(dst, src){
+  const A = [], b = [];
+  for(let i=0;i<4;i++){
+    const [u,v] = dst[i], [x,y] = src[i];
+    A.push([u,v,1,0,0,0,-u*x,-v*x]); b.push(x);
+    A.push([0,0,0,u,v,1,-u*y,-v*y]); b.push(y);
+  }
+  for(let i=0;i<8;i++){                                   // Gauß mit Pivotierung
+    let p = i;
+    for(let r=i+1;r<8;r++) if(Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+    [A[i],A[p]] = [A[p],A[i]]; [b[i],b[p]] = [b[p],b[i]];
+    const d = A[i][i]; if(Math.abs(d) < 1e-12) return null;
+    for(let cIdx=i;cIdx<8;cIdx++) A[i][cIdx] /= d;
+    b[i] /= d;
+    for(let r=0;r<8;r++){
+      if(r===i) continue;
+      const f = A[r][i]; if(!f) continue;
+      for(let cIdx=i;cIdx<8;cIdx++) A[r][cIdx] -= f*A[i][cIdx];
+      b[r] -= f*b[i];
+    }
+  }
+  return b;   // [a,b,c,d,e,f,g,h]
+}
+
+const RECT = { cw:170, ch:152 };
+function unwarp(){
+  const W = RECT.cw*TPL_COLS, H = RECT.ch*TPL_ROWS;
+  const Hm = homography([[0,0],[W,0],[W,H],[0,H]], scan.pts);
+  if(!Hm){ toast('Die vier Ecken liegen zu schief. Punkte neu setzen.'); return null; }
+  const src = document.createElement('canvas');
+  src.width = scan.img.width; src.height = scan.img.height;
+  src.getContext('2d').drawImage(scan.img,0,0);
+  const sd = src.getContext('2d').getImageData(0,0,src.width,src.height).data;
+  const sw = src.width, sh = src.height;
+  const out = new Uint8ClampedArray(W*H);
+  const [a,b2,c,d,e,f,g,h] = Hm;
+  for(let v=0;v<H;v++){
+    for(let u=0;u<W;u++){
+      const w = g*u + h*v + 1;
+      const x = (a*u + b2*v + c)/w, y = (d*u + e*v + f)/w;
+      let lum = 255;
+      if(x>=0 && y>=0 && x<sw-1 && y<sh-1){
+        const x0=x|0, y0=y|0, fx=x-x0, fy=y-y0;
+        let acc = 0;
+        for(let k=0;k<4;k++){
+          const xx = x0 + (k&1), yy = y0 + (k>>1);
+          const wgt = ((k&1)?fx:1-fx) * ((k>>1)?fy:1-fy);
+          const o = (yy*sw+xx)*4;
+          acc += wgt * (sd[o]*0.299 + sd[o+1]*0.587 + sd[o+2]*0.114);
+        }
+        lum = acc;
+      }
+      out[v*W+u] = lum;
+    }
+  }
+  return { data:out, W, H };
+}
+
+/** Kleine Sprenkel entfernen, i-Punkte und Umlaute aber behalten. */
+function despeckle(alpha, w, h){
+  const seen = new Uint8Array(w*h), stack = new Int32Array(w*h);
+  const comps = [];
+  let total = 0;
+  for(let i=0;i<w*h;i++) if(alpha[i] > 40) total++;
+  for(let i=0;i<w*h;i++){
+    if(seen[i] || alpha[i] <= 40) continue;
+    let sp = 0, area = 0; stack[sp++] = i; seen[i] = 1;
+    const px = [];
+    while(sp){
+      const p = stack[--sp]; area++; px.push(p);
+      const x = p%w, y = (p/w)|0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        const nx = x+dx, ny = y+dy;
+        if(nx<0||ny<0||nx>=w||ny>=h) continue;
+        const q = ny*w+nx;
+        if(!seen[q] && alpha[q] > 40){ seen[q] = 1; stack[sp++] = q; }
+      }
+    }
+    comps.push({area, px});
+  }
+  const minArea = Math.max(10, total*0.018);
+  for(const cp of comps) if(cp.area < minArea) for(const p of cp.px) alpha[p] = 0;
+}
+
+function extractCells(){
+  const u = unwarp(); if(!u) return null;
+  const { data, W } = u;
+  const trim = $('#chkTrimEdges').checked ? 0.085 : 0.02;
+  const thrPct = +$('#thr').value/100;
+  const cells = [];
+
+  for(let idx=0; idx<ALL_CHARS.length; idx++){
+    const col = idx%TPL_COLS, row = (idx/TPL_COLS)|0;
+    const cx0 = col*RECT.cw, cy0 = row*RECT.ch;
+    const mx = Math.round(RECT.cw*trim), my = Math.round(RECT.ch*trim);
+    const x0 = cx0+mx, y0 = cy0+my, cw = RECT.cw-mx*2, ch = RECT.ch-my*2;
+
+    // Papierhelligkeit aus dem oberen Perzentil schätzen
+    const hist = new Uint32Array(256);
+    for(let y=0;y<ch;y++) for(let x=0;x<cw;x++) hist[data[(y0+y)*W + x0+x]|0]++;
+    let acc = 0, bgLum = 255;
+    for(let i=255;i>=0;i--){ acc += hist[i]; if(acc >= cw*ch*0.20){ bgLum = i; break; } }
+    const hi = bgLum*thrPct, lo = hi*0.62;
+
+    const alpha = new Uint8ClampedArray(cw*ch);
+    for(let y=0;y<ch;y++) for(let x=0;x<cw;x++){
+      const l = data[(y0+y)*W + x0+x];
+      alpha[y*cw+x] = l >= hi ? 0 : l <= lo ? 255 : Math.round(255*(hi-l)/(hi-lo));
+    }
+    despeckle(alpha, cw, ch);
+
+    let minX=cw, maxX=-1, minY=ch, maxY=-1, ink=0;
+    for(let y=0;y<ch;y++) for(let x=0;x<cw;x++){
+      if(alpha[y*cw+x] > 60){ ink++; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+    }
+    if(ink < cw*ch*0.004 || maxX<0){ cells.push({ch:ALL_CHARS[idx], empty:true}); continue; }
+
+    const bw = maxX-minX+1, bh = maxY-minY+1;
+    const mask = document.createElement('canvas');
+    mask.width = bw; mask.height = bh;
+    const mctx = mask.getContext('2d');
+    const img = mctx.createImageData(bw,bh);
+    for(let y=0;y<bh;y++) for(let x=0;x<bw;x++){
+      const o = (y*bw+x)*4;
+      img.data[o]=img.data[o+1]=img.data[o+2]=0;
+      img.data[o+3] = alpha[(y+minY)*cw + (x+minX)];
+    }
+    mctx.putImageData(img,0,0);
+    const small = shrink(mask, 170);
+
+    // Pixel -> em, relativ zur Grundlinie der Zelle
+    const R = cellRules(0, RECT.ch);
+    const em = R.em;
+    const top = (my + minY - R.base)/em;
+    const bot = (my + maxY + 1 - R.base)/em;
+    cells.push({ ch:ALL_CHARS[idx], empty:false, url:small.toDataURL('image/png'),
+                 w:bw/em, top, bot, thumb:small });
+  }
+  return cells;
+}
+function shrink(cv, maxH){
+  if(cv.height <= maxH) return cv;
+  const k = maxH/cv.height;
+  const o = document.createElement('canvas');
+  o.width = Math.max(1,Math.round(cv.width*k)); o.height = maxH;
+  const c = o.getContext('2d'); c.imageSmoothingQuality = 'high';
+  c.drawImage(cv,0,0,o.width,o.height);
+  return o;
+}
+
+/* ===================== Scan: Vorschau & Übernahme ======================= */
+
+$('#thr').addEventListener('input', e=>{ $('#thrVal').textContent = e.target.value+' %'; });
+
+$('#btnExtract').addEventListener('click', ()=>{
+  const btn = $('#btnExtract');
+  btn.disabled = true; btn.textContent = 'rechnet …';
+  setTimeout(()=>{
+    let cells = null;
+    try { cells = extractCells(); }
+    catch(err){ console.error(err); toast('Beim Auslesen ging etwas schief.'); }
+    btn.disabled = false; btn.textContent = 'Zeichen auslesen';
+    if(!cells) return;
+    scan.cells = cells;
+    scan.on = cells.map(c=>!c.empty);
+    showExtract();
+  }, 20);
+});
+
+function showExtract(){
+  const grid = $('#pvGrid'); grid.innerHTML = '';
+  let found = 0;
+  scan.cells.forEach((c,i)=>{
+    if(c.empty) return;
+    found++;
+    const d = document.createElement('div');
+    d.className = 'pv' + (scan.on[i] ? '' : ' off');
+    d.title = 'Zeichen: '+c.ch;
+    const cv = document.createElement('canvas'); cv.width = 92; cv.height = 92;
+    const cx = cv.getContext('2d');
+    const k = Math.min(80/c.thumb.width, 80/c.thumb.height);
+    cx.drawImage(c.thumb, (92-c.thumb.width*k)/2, (92-c.thumb.height*k)/2, c.thumb.width*k, c.thumb.height*k);
+    const lab = document.createElement('i'); lab.textContent = c.ch;
+    d.appendChild(cv); d.appendChild(lab);
+    d.addEventListener('click', ()=>{ scan.on[i] = !scan.on[i]; d.classList.toggle('off', !scan.on[i]); updateExtractCount(); });
+    grid.appendChild(d);
+  });
+  $('#extractResult').hidden = false;
+  $('#extractCount').textContent = found+' von '+ALL_CHARS.length+' Zellen beschrieben';
+  updateExtractCount();
+  if(found < 5) toast('Kaum was gefunden — Ecken prüfen oder Schwarzwert höher ziehen.');
+}
+function updateExtractCount(){
+  const n = scan.on ? scan.on.filter(Boolean).length : 0;
+  $('#btnApplyScan').textContent = n ? n+' Zeichen übernehmen' : 'nichts ausgewählt';
+  $('#btnApplyScan').disabled = !n;
+}
+$('#btnPvAll').addEventListener('click', ()=>{ scan.cells.forEach((c,i)=>{ if(!c.empty) scan.on[i]=true; }); showExtract(); });
+$('#btnPvNone').addEventListener('click', ()=>{ scan.on = scan.on.map(()=>false); showExtract(); });
+$('#btnApplyScan').addEventListener('click', ()=>{
+  let n = 0;
+  scan.cells.forEach((c,i)=>{
+    if(c.empty || !scan.on[i]) return;
+    addGlyph(c.ch, makeImageGlyph(c.url, c.w, c.top, c.bot));
+    n++;
+  });
+  toast(n+' Zeichen übernommen · '+glyphCount()+' von '+ALL_CHARS.length);
+  $('#extractResult').hidden = true;
+  scheduleRender();
+});
+
+/* ========================== Panel: Schreiben ============================ */
+
+const ui = {
+  size:$('#size'), lead:$('#lead'), track:$('#track'), word:$('#word'), slant:$('#slant'),
+  jit:$('#jit'), weight:$('#weight'), width:$('#width'), pad:$('#marg'), ink:$('#ink'),
+  bg:$('#bg'), hidpi:$('#chkHiDpi'), text:$('#text')
+};
+function opts(){
+  return {
+    size:+ui.size.value, lead:+ui.lead.value/100, track:+ui.track.value/100,
+    word:+ui.word.value/100, slant:+ui.slant.value, jit:+ui.jit.value/100,
+    weight:+ui.weight.value/100, width:+ui.width.value, pad:+ui.pad.value,
+    ink:ui.ink.value, bg:ui.bg.value, hidpi:ui.hidpi.checked
+  };
+}
+let rafId = 0;
+function scheduleRender(){ if(rafId) return; rafId = requestAnimationFrame(()=>{ rafId = 0; doRender(); }); }
+function doRender(){
+  const o = opts();
+  $('#vSize').textContent   = o.size+' px';
+  $('#vLead').textContent   = o.lead.toFixed(2).replace('.',',');
+  $('#vTrack').textContent  = o.track.toFixed(2).replace('.',',');
+  $('#vWord').textContent   = o.word.toFixed(2).replace('.',',');
+  $('#vSlant').textContent  = o.slant+'°';
+  $('#vJit').textContent    = Math.round(o.jit*100)+' %';
+  $('#vWeight').textContent = o.weight.toFixed(1).replace('.',',')+'×';
+  $('#vWidth').textContent  = o.width+' px';
+  $('#vPad').textContent    = o.pad+' px';
+
+  const txt = ui.text.value;
+  $('#txtCount').textContent = txt.length+' Zeichen';
+  const res = renderSheet($('#sheet'), txt, o);
+  $('#sheetInfo').textContent = o.width+'×'+res.height+' px · '+res.lines+' Zeile'+(res.lines>1?'n':'');
+
+  const box = $('#missingBox');
+  if(res.missing.length){
+    box.innerHTML = '<div class="note warn"><span class="ic">!</span><span><b>Fehlt noch in deiner Handschrift:</b> <span style="font-family:var(--f-mono)">'
+      + res.missing.map(c=>c===' '?'␣':c).join(' ')
+      + '</span><br>Diese Zeichen bleiben leer. In Schritt 1 nachtragen.</span></div>';
+  } else box.innerHTML = '';
+
+  const note = $('#exportNote');
+  note.innerHTML = o.bg === 'transparent'
+    ? '<div class="note info"><span class="ic">i</span><span>Transparenz überlebt den Weg über die Zwischenablage oft nicht (der Hintergrund wird dann schwarz). Für transparente Bilder lieber <b>PNG herunterladen</b> und die Datei in OneNote ziehen.</span></div>'
+    : '';
+}
+for(const el of [ui.size,ui.lead,ui.track,ui.word,ui.slant,ui.jit,ui.weight,ui.width,ui.pad,ui.ink,ui.bg,ui.hidpi,ui.text])
+  el.addEventListener('input', scheduleRender);
+
+$('#inkPreset').addEventListener('change', e=>{
+  if(e.target.value !== 'custom'){ ui.ink.value = e.target.value; scheduleRender(); }
+});
+ui.ink.addEventListener('input', ()=>{ $('#inkPreset').value = 'custom'; });
+$('#btnReroll').addEventListener('click', ()=>{ state.seed = (Math.random()*1e9)|0; scheduleRender(); toast('Neu gewürfelt'); });
+
+/* ============================== Export ================================== */
+
+async function sheetBlob(){
+  return new Promise(res => $('#sheet').toBlob(res, 'image/png'));
+}
+$('#btnCopy').addEventListener('click', async ()=>{
+  try{
+    if(!navigator.clipboard || !window.ClipboardItem) throw new Error('no-api');
+    const blob = await sheetBlob();
+    await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+    toast('In der Zwischenablage — jetzt in OneNote Strg+V');
+  }catch(err){
+    console.warn(err);
+    toast('Kopieren ging nicht. Nimm den PNG-Download.', 3600);
+    $('#copyHint').innerHTML = 'Dein Browser lässt das Kopieren nicht zu (Firefox kann es nur eingeschränkt). Der Download klappt immer.';
+  }
+});
+$('#btnPng').addEventListener('click', ()=>{
+  downloadCanvas($('#sheet'), 'handschrift.png');
+  toast('PNG gespeichert');
+});
+
+/* ========================= Profil sichern/laden ========================== */
+
+function saveProfileFile(){
+  const name = (state.profile.name || 'handschrift').replace(/[^\wäöüÄÖÜß -]/g,'').trim() || 'handschrift';
+  const blob = new Blob([JSON.stringify(state.profile)], {type:'application/json'});
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = name.toLowerCase().replace(/\s+/g,'-')+'.handschrift.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u), 4000);
+  toast('Profil gesichert');
+}
+$('#btnSave').addEventListener('click', saveProfileFile);
+$('#btnSave2').addEventListener('click', saveProfileFile);
+$('#btnLoad').addEventListener('click', ()=>$('#fileProfile').click());
+$('#btnLoad2').addEventListener('click', ()=>$('#fileProfile').click());
+$('#fileProfile').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      const p = JSON.parse(rd.result);
+      if(!p || typeof p !== 'object' || !p.glyphs) throw new Error('Format');
+      state.profile = p;
+      cache.clear(); imgPool.clear(); saveLocal(); refreshProfileUI();
+      selectChar(state.current); scheduleRender();
+      toast('Profil geladen · '+glyphCount()+' Zeichen');
+    }catch(err){ toast('Das ist keine gültige Profildatei.'); }
+  };
+  rd.readAsText(f);
+  e.target.value = '';
+});
+$('#btnReset').addEventListener('click', ()=>{
+  if(!confirm('Alle erfassten Zeichen löschen? Das lässt sich nicht rückgängig machen.')) return;
+  state.profile = emptyProfile();
+  cache.clear(); imgPool.clear(); saveLocal(); refreshProfileUI();
+  selectChar(ALL_CHARS[0]); scheduleRender();
+  toast('Profil geleert');
+});
+$('#btnDemo').addEventListener('click', ()=>{
+  if(glyphCount() && !state.profile.demo && !confirm('Deine erfassten Zeichen werden durch die Demo ersetzt. Weiter?')) return;
+  loadDemo(true);
+});
+
+function refreshProfileUI(){
+  const n = glyphCount();
+  $('#profName').textContent = state.profile.name;
+  $('#profCount').textContent = n+'/'+ALL_CHARS.length;
+  $('#profMeter').style.width = (n/ALL_CHARS.length*100).toFixed(1)+'%';
+  refreshCharset(); renderVariants();
+}
+
+/* =========================== Demo-Handschrift ===========================
+   Damit die App nicht als leere Hülle startet: eine Schreibschrift wird
+   einmal in Masken gerendert und laeuft danach durch exakt denselben Weg
+   wie echte gescannte Zeichen.                                            */
+
+function renderDemoGlyph(ch, fam, seedIdx){
+  const fs = 150, W = 460, H = 460, bx = 120, by = 300;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  c.font = '400 '+fs+'px "'+fam+'", cursive';
+  const em = c.measureText('h').actualBoundingBoxAscent || fs*0.68;
+  const adv = c.measureText(ch).width;
+  const r = mulberry32(hashStr(ch)+seedIdx*977);
+  c.save();
+  c.translate(bx, by);
+  c.rotate((r()-0.5)*0.045);
+  c.scale(1+(r()-0.5)*0.05, 1+(r()-0.5)*0.05);
+  c.fillStyle = '#000';
+  c.fillText(ch, 0, 0);
+  c.restore();
+
+  const d = c.getImageData(0,0,W,H).data;
+  let minX=W, maxX=-1, minY=H, maxY=-1;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(d[(y*W+x)*4+3] > 10){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  if(maxX < 0) return null;
+  const bw = maxX-minX+1, bh = maxY-minY+1;
+  const cut = document.createElement('canvas'); cut.width = bw; cut.height = bh;
+  cut.getContext('2d').drawImage(cv, minX, minY, bw, bh, 0, 0, bw, bh);
+  const small = shrink(cut, 150);
+  const g = makeImageGlyph(small.toDataURL('image/png'), bw/em, (minY-by)/em, (maxY+1-by)/em);
+  g.adv = round(Math.max(adv/em, bw/em + M.SIDE*2));
+  return g;
+}
+/** check() meldet fuer unbekannte Familien true, also per Breite vergleichen. */
+function caveatReady(){
+  try{
+    const c = document.createElement('canvas').getContext('2d');
+    const probe = 'mmmwwwiiill08';
+    c.font = '80px monospace';       const ref = c.measureText(probe).width;
+    c.font = '80px Caveat, monospace'; const now = c.measureText(probe).width;
+    return Math.abs(now-ref) > 1;
+  }catch(e){ return false; }
+}
+async function loadDemo(explicit){
+  try { if(document.fonts && document.fonts.load) await document.fonts.load('150px Caveat'); } catch(e){}
+  const has = caveatReady();
+  const fam = has ? 'Caveat' : 'cursive';
+  const p = emptyProfile(has ? 'Demo-Handschrift' : 'Demo (Systemschrift)');
+  p.demo = true;
+  for(const ch of ALL_CHARS){
+    const vs = [];
+    for(let k=0;k<2;k++){ const g = renderDemoGlyph(ch, fam, k); if(g) vs.push(g); }
+    if(vs.length) p.glyphs[ch] = vs;
+  }
+  state.profile = p;
+  cache.clear(); imgPool.clear();
+  saveLocal(); refreshProfileUI(); scheduleRender();
+  if(explicit) toast(has ? 'Demo geladen — ersetze sie durch deine eigene Schrift.'
+                         : 'Demo geladen (ohne Netz mit Systemschrift statt Caveat).');
+}
+
+/* ============================ Reiter & Thema ============================= */
+
+function showTab(name){
+  for(const b of $$('.step')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
+  for(const p of $$('.panel')) p.hidden = (p.id !== 'panel-'+name);
+  if(name === 'schreiben') scheduleRender();
+  if(name === 'erfassen' && state.capMode === 'draw') paintStrokes();
+}
+for(const b of $$('.step')) b.addEventListener('click', ()=>showTab(b.dataset.tab));
+
+for(const b of $$('#capMode button')) b.addEventListener('click', ()=>{
+  state.capMode = b.dataset.mode;
+  for(const x of $$('#capMode button')) x.setAttribute('aria-pressed', String(x === b));
+  $('#modeDraw').hidden = state.capMode !== 'draw';
+  $('#modeScan').hidden = state.capMode !== 'scan';
+  $('#capModeHint').textContent = state.capMode === 'draw'
+    ? 'Mit Stift, Finger oder Maus jedes Zeichen einmal schreiben.'
+    : 'Vorlage drucken, ausfüllen, abfotografieren, hochladen.';
+  if(state.capMode === 'draw') paintStrokes();
+});
+
+const THEME_KEY = 'schriftlabor.theme';
+function applyTheme(t){
+  if(t) document.documentElement.setAttribute('data-theme', t);
+  else document.documentElement.removeAttribute('data-theme');
+}
+$('#btnTheme').addEventListener('click', ()=>{
+  const now = document.documentElement.getAttribute('data-theme');
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const next = now ? (now === 'dark' ? 'light' : null) : (dark ? 'light' : 'dark');
+  applyTheme(next);
+  try { next ? localStorage.setItem(THEME_KEY, next) : localStorage.removeItem(THEME_KEY); } catch(e){}
+});
+try { applyTheme(localStorage.getItem(THEME_KEY)); } catch(e){}
+
+document.addEventListener('keydown', e=>{
+  if(e.target.matches('input,textarea,select')) return;
+  if(!$('#panel-erfassen').hidden && state.capMode === 'draw'){
+    if(e.key === 'Enter'){ e.preventDefault(); $('#btnKeep').click(); }
+    else if(e.key === 'Backspace'){ e.preventDefault(); $('#btnUndo').click(); }
+    else if(e.key === 'ArrowRight'){ $('#btnSkip').click(); }
+    else if(e.key === 'ArrowLeft'){ $('#btnPrev').click(); }
+    else if(e.key.length === 1 && ALL_CHARS.includes(e.key)){ selectChar(e.key); }
+  }
+});
+
+/* ================================ Start ================================= */
+
+ui.text.value = 'Besprechung Dienstag, 10 Uhr\n\nAngebot prüfen, Frist läuft am 14.03. ab.\nRückmeldung an Jörg & Team (spätestens Freitag).\nAlles Weitere klären wir vor Ort.';
+
+(async function init(){
+  const saved = loadLocal();
+  if(saved){
+    state.profile = saved;
+    buildCharset();
+    refreshProfileUI();
+    selectChar(nextMissing(ALL_CHARS[ALL_CHARS.length-1]));
+    scheduleRender();
+  } else {
+    state.profile = emptyProfile('wird geladen …');
+    buildCharset(); refreshProfileUI(); selectChar('a');
+    await loadDemo(false);
+    selectChar('a');
+  }
+})();
+window.addEventListener('resize', ()=>{ if(scan.img && !$('#modeScan').hidden) setupScanCanvas(); });
+</script>
+</body>
+</html>
