@@ -6,6 +6,10 @@
 <title>Schriftlabor</title>
 <meta name="description" content="Getippten Text in die eigene Handschrift umwandeln und als Bild in OneNote einfügen. Läuft komplett im Browser, nichts wird hochgeladen.">
 <meta name="theme-color" content="#2c3fb0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Schriftlabor">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232c3fb0'/><path d='M6 20c2.5-8.5 5.5-8.5 7.5-3.5s4 4.5 6 .5' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M5.5 25.5h21' stroke='%23fff' stroke-opacity='.5' stroke-width='2' stroke-linecap='round'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,6 +75,12 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.8);
 }
 *{box-sizing:border-box}
+/* Touch-Bedienung: kein Doppeltipp-Zoom auf Bedienelementen, kein blauer
+   Aufblitzer, kein versehentliches Markieren beim Schreiben. */
+button,.seg,.step,.gl,input[type=range],input[type=color],select,label.switch{touch-action:manipulation}
+body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;user-select:none;-webkit-user-select:none}
+textarea,input[type=text],input[type=number]{user-select:text;-webkit-user-select:text}
+.paper-stage,.scan-stage{overscroll-behavior:contain}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.015em;text-wrap:balance}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -112,7 +122,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 main{max-width:1440px;margin:0 auto;padding:20px}
 .panel[hidden]{display:none}
 .split{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:18px;align-items:start}
-@media (max-width:900px){.split{grid-template-columns:1fr}}
+.split.wide{grid-template-columns:minmax(0,1fr) minmax(280px,360px)}
+@media (max-width:900px){
+  .split,.split.wide{grid-template-columns:1fr}
+  /* Auf schmalen Geräten gehört die Schreibfläche nach oben, nicht hinter
+     93 Zeichenkacheln. */
+  #modeDraw>.card:last-child{order:-1}
+}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
 .card>header{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .card>header h2{font-size:14px}
@@ -159,7 +175,7 @@ input[type=color]{width:38px;height:32px;padding:2px;background:var(--surface-2)
 .cur-meta{display:flex;flex-direction:column;gap:1px}
 .cur-meta b{font-size:14px;font-weight:600}
 .cur-meta span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-canvas.pad{width:100%;max-width:620px;aspect-ratio:1.55;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);touch-action:none;cursor:crosshair;display:block}
+canvas.pad{width:100%;max-width:760px;aspect-ratio:1.55;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);touch-action:none;-webkit-touch-callout:none;cursor:crosshair;display:block}
 .variants{display:flex;gap:7px;flex-wrap:wrap;align-items:center;min-height:34px}
 .variants .vchip{position:relative;width:44px;height:44px;background:var(--paper);border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .variants .vchip canvas{width:100%;height:100%;display:block}
@@ -200,11 +216,22 @@ canvas.sheet{max-width:100%;height:auto;box-shadow:var(--shadow);border-radius:2
 .guide-step h3{font-size:14px;margin-bottom:3px}
 .guide-step p{margin:0;color:var(--ink-2);font-size:13px}
 kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--surface-2);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;white-space:nowrap}
+.ipad{margin-top:18px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;gap:8px}
+.ipad h3{font-size:13px;font-family:var(--f-mono);font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ipad p{margin:0;font-size:13px;color:var(--ink-2)}
 .faq{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px}
 .faq div>b{display:block;font-size:13px;margin-bottom:2px}
 .faq div>p{margin:0;font-size:12.5px;color:var(--ink-2)}
 
 /* ---------- Toast ---------- */
+/* Eigener Dialog: confirm() wird von Browsern unterdrueckt, sobald der
+   Nutzer Seitendialoge abgestellt hat, und in eingebetteten Rahmen immer. */
+#ask{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(12,14,20,.5)}
+#ask.open{display:flex}
+#ask .box{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px}
+#ask h3{font-size:16px;margin-bottom:6px}
+#ask p{margin:0 0 16px;font-size:13px;color:var(--ink-2)}
+#ask .row{justify-content:flex-end}
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:90;padding:10px 16px;background:var(--ink);color:var(--bg);border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -288,6 +315,9 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
           <span class="grow"></span>
           <label class="switch" title="Nach dem Übernehmen automatisch zum nächsten fehlenden Zeichen springen">
             <input type="checkbox" id="chkAuto" checked> Auto-Weiter
+          </label>
+          <label class="switch" id="penOnlyWrap" hidden title="Ignoriert Finger und aufliegende Hand, sobald ein Stift erkannt wurde">
+            <input type="checkbox" id="chkPenOnly" checked> Nur Stift
           </label>
         </div>
         <div class="row" style="width:100%;align-items:flex-start">
@@ -419,6 +449,7 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
             <button class="btn big" id="btnPng">PNG herunterladen</button>
             <span class="grow"></span>
             <span class="empty-note" id="copyHint">danach in OneNote <kbd>Strg</kbd>+<kbd>V</kbd></span>
+          <span class="sr" id="copyHintTouch">danach in OneNote lange tippen und einsetzen</span>
           </div>
           <div id="exportNote"></div>
         </div>
@@ -429,7 +460,7 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
 
 <!-- ============ 3 · ONENOTE ============ -->
 <section class="panel" id="panel-onenote" hidden>
-  <div class="split" style="grid-template-columns:minmax(0,1fr) minmax(280px,360px)">
+  <div class="split wide">
     <div class="card">
       <header><h2>So landet der Text in OneNote</h2></header>
       <div class="body">
@@ -444,12 +475,18 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
           </div></div>
           <div class="guide-step"><span class="n">3</span><div>
             <h3>In OneNote einfügen</h3>
-            <p>Cursor an die Stelle setzen, <kbd>Strg</kbd>+<kbd>V</kbd>. Das Bild sitzt dann als Objekt auf der Seite und lässt sich frei schieben und in der Größe ziehen.</p>
+            <p id="pasteStep">Cursor an die Stelle setzen, <kbd>Strg</kbd>+<kbd>V</kbd>. Das Bild sitzt dann als Objekt auf der Seite und lässt sich frei schieben und in der Größe ziehen.</p>
           </div></div>
           <div class="guide-step"><span class="n">4</span><div>
             <h3>Alternativ per Datei</h3>
             <p>PNG herunterladen und in OneNote über <b>Einfügen → Bilder</b> holen, oder die Datei direkt aus dem Explorer auf die Seite ziehen. Der Weg erhält auch echte Transparenz.</p>
           </div></div>
+        </div>
+        <div class="ipad">
+          <h3>Auf dem iPad</h3>
+          <p><b>Als Bild kopieren</b> antippen, dann in OneNote lange auf die Seite tippen und <b>Einsetzen</b> wählen. Klappt das Kopieren nicht, sichere stattdessen das PNG und hol es in OneNote über <b>Einfügen → Bilder</b> aus der Dateien-App.</p>
+          <p>Mit dem Apple Pencil ist das Erfassen deutlich angenehmer als mit der Maus, und der Druck des Stifts landet direkt in der Strichstärke. Sobald der Stift erkannt wird, erscheint in Schritt 1 der Schalter <b>Nur Stift</b>: die aufliegende Hand schreibt dann nicht mit.</p>
+          <p>Über <b>Teilen → Zum Home-Bildschirm</b> liegt das Schriftlabor als Symbol neben deinen Apps, startet ohne Safari-Leisten und ist von Safaris Aufräumaktion ausgenommen.</p>
         </div>
       </div>
     </div>
@@ -468,6 +505,7 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
         <header><h2>Profil sichern</h2></header>
         <div class="body stack">
           <p style="margin:0;font-size:12.5px;color:var(--ink-2)">Deine Handschrift liegt im Speicher dieses Browsers. Neuer Rechner, anderer Browser oder aufgeräumte Websitedaten heißt: weg. Sichere sie einmal als Datei.</p>
+          <div class="note warn" id="safariNote" hidden><span class="ic">!</span><span><b>Safari räumt auf:</b> Websitedaten werden gelöscht, wenn du die Seite sieben Tage nicht öffnest. Leg sie über <b>Teilen → Zum Home-Bildschirm</b> ab, dann bleibt sie verschont — und sichere trotzdem einmal das Profil.</span></div>
           <div class="row"><button class="btn" id="btnSave2">Profil als Datei sichern</button><button class="btn ghost" id="btnLoad2">Profil laden</button></div>
         </div>
       </div>
@@ -476,6 +514,16 @@ kbd{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;background:var(--
 </section>
 
 </main>
+<div id="ask" role="dialog" aria-modal="true" aria-labelledby="askTitle">
+  <div class="box">
+    <h3 id="askTitle"></h3>
+    <p id="askText"></p>
+    <div class="row"><span class="grow"></span>
+      <button class="btn" id="askNo">Abbrechen</button>
+      <button class="btn primary" id="askYes">Löschen</button>
+    </div>
+  </div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -503,6 +551,34 @@ const $  = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const round = (v,n=4) => Math.round(v*10**n)/10**n;
+
+/** Bestaetigung in der Oberflaeche. confirm() faellt aus, sobald der Browser
+    Seitendialoge unterdrueckt oder die Seite eingebettet laeuft. */
+function askConfirm(title, text, okLabel='Löschen'){
+  return new Promise(res=>{
+    const box = $('#ask'), yes = $('#askYes'), no = $('#askNo');
+    $('#askTitle').textContent = title;
+    $('#askText').textContent = text;
+    yes.textContent = okLabel;
+    const close = v => {
+      box.classList.remove('open');
+      yes.removeEventListener('click', onYes);
+      no.removeEventListener('click', onNo);
+      box.removeEventListener('click', onBack);
+      document.removeEventListener('keydown', onKey);
+      res(v);
+    };
+    const onYes = ()=>close(true), onNo = ()=>close(false);
+    const onBack = e => { if(e.target === box) close(false); };
+    const onKey = e => { if(e.key === 'Escape') close(false); else if(e.key === 'Enter') close(true); };
+    yes.addEventListener('click', onYes);
+    no.addEventListener('click', onNo);
+    box.addEventListener('click', onBack);
+    document.addEventListener('keydown', onKey);
+    box.classList.add('open');
+    yes.focus();
+  });
+}
 
 function toast(msg, ms=2200){
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -775,6 +851,17 @@ padMetrics();
 
 let strokes = [];        // aktueller Entwurf, Punkte in Canvas-Pixeln
 let cur = null, drawing = false, lastPt = null, pSmooth = 0.7;
+let sawPen = false;      // ab dem ersten Stiftkontakt gilt Handballenschutz
+
+/** Liegt die Hand auf dem Blatt, meldet iPadOS sie als normale Beruehrung.
+    Wer einmal mit dem Stift gezeichnet hat, will genau die nicht mitschreiben. */
+function ignorePointer(e){
+  if(e.pointerType === 'pen'){
+    if(!sawPen){ sawPen = true; $('#penOnlyWrap').hidden = false; }
+    return false;
+  }
+  return e.pointerType === 'touch' && sawPen && $('#chkPenOnly').checked;
+}
 
 function drawRules(){
   const w = pad.width, h = pad.height;
@@ -820,6 +907,7 @@ function padPos(e){
   return { x:(e.clientX-r.left)*pad.width/r.width, y:(e.clientY-r.top)*pad.height/r.height };
 }
 pad.addEventListener('pointerdown', e=>{
+  if(ignorePointer(e)) return;
   e.preventDefault(); pad.setPointerCapture(e.pointerId);
   drawing = true; cur = []; strokes.push(cur);
   const p = padPos(e); pSmooth = pressureOf(e, p, true);
@@ -1420,20 +1508,25 @@ $('#btnReroll').addEventListener('click', ()=>{ state.seed = (Math.random()*1e9)
 
 /* ============================== Export ================================== */
 
-async function sheetBlob(){
-  return new Promise(res => $('#sheet').toBlob(res, 'image/png'));
+function sheetBlob(){
+  return new Promise((res, rej) => $('#sheet').toBlob(b => b ? res(b) : rej(new Error('kein Bild')), 'image/png'));
 }
-$('#btnCopy').addEventListener('click', async ()=>{
-  try{
-    if(!navigator.clipboard || !window.ClipboardItem) throw new Error('no-api');
-    const blob = await sheetBlob();
-    await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-    toast('In der Zwischenablage — jetzt in OneNote Strg+V');
-  }catch(err){
+/* Safari verlangt, dass das ClipboardItem noch im Klick selbst entsteht und das
+   Bild als Versprechen bekommt. Ein await davor kostet die Nutzergeste und der
+   Aufruf wird abgelehnt — deshalb hier kein await vor dem write(). */
+$('#btnCopy').addEventListener('click', ()=>{
+  const scheitert = err => {
     console.warn(err);
     toast('Kopieren ging nicht. Nimm den PNG-Download.', 3600);
-    $('#copyHint').innerHTML = 'Dein Browser lässt das Kopieren nicht zu (Firefox kann es nur eingeschränkt). Der Download klappt immer.';
-  }
+    $('#copyHint').textContent = 'Dein Browser lässt das Kopieren nicht zu. Der Download klappt immer.';
+  };
+  if(!navigator.clipboard || !window.ClipboardItem){ scheitert('keine Zwischenablage-Schnittstelle'); return; }
+  try{
+    const item = new ClipboardItem({ 'image/png': sheetBlob() });
+    navigator.clipboard.write([item])
+      .then(()=>toast('In der Zwischenablage — jetzt in OneNote einfügen'))
+      .catch(scheitert);
+  }catch(err){ scheitert(err); }
 });
 $('#btnPng').addEventListener('click', ()=>downloadCanvas($('#sheet'), 'handschrift.png'));
 
@@ -1464,15 +1557,23 @@ $('#fileProfile').addEventListener('change', e=>{
   rd.readAsText(f);
   e.target.value = '';
 });
-$('#btnReset').addEventListener('click', ()=>{
-  if(!confirm('Alle erfassten Zeichen löschen? Das lässt sich nicht rückgängig machen.')) return;
+$('#btnReset').addEventListener('click', async ()=>{
+  const n = glyphCount();
+  const ok = await askConfirm('Alles löschen?',
+    n ? n + ' erfasste Zeichen werden gelöscht. Das lässt sich nicht rückgängig machen — sichere vorher das Profil, wenn du es behalten willst.'
+      : 'Es ist nichts erfasst. Trotzdem zurücksetzen?');
+  if(!ok) return;
   state.profile = emptyProfile();
   cache.clear(); imgPool.clear(); saveLocal(); refreshProfileUI();
   selectChar(ALL_CHARS[0]); scheduleRender();
   toast('Profil geleert');
 });
-$('#btnDemo').addEventListener('click', ()=>{
-  if(glyphCount() && !state.profile.demo && !confirm('Deine erfassten Zeichen werden durch die Demo ersetzt. Weiter?')) return;
+$('#btnDemo').addEventListener('click', async ()=>{
+  if(glyphCount() && !state.profile.demo){
+    const ok = await askConfirm('Demo laden?',
+      'Deine ' + glyphCount() + ' erfassten Zeichen werden dabei ersetzt.', 'Ersetzen');
+    if(!ok) return;
+  }
   loadDemo(true);
 });
 
@@ -1581,6 +1682,23 @@ $('#btnTheme').addEventListener('click', ()=>{
   try { next ? localStorage.setItem(THEME_KEY, next) : localStorage.removeItem(THEME_KEY); } catch(e){}
 });
 try { applyTheme(localStorage.getItem(THEME_KEY)); } catch(e){}
+
+/* Geraeteabhaengige Formulierungen: auf dem iPad gibt es kein Strg+V, und
+   Safari raeumt Websitedaten nach sieben ungenutzten Tagen weg. */
+const istApple = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                 (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+const istTouch = navigator.maxTouchPoints > 0;   // iPad/iPhone melden >=1, Macs 0
+if(istApple){
+  const safari = /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|Edg|FxiOS/.test(navigator.userAgent);
+  if(safari) $('#safariNote').hidden = false;
+  if(istTouch){
+    $('#copyHint').textContent = 'danach in OneNote lange tippen und einsetzen';
+    $('#pasteStep').textContent = 'In OneNote an die Stelle tippen, gedrückt halten und Einsetzen wählen. Das Bild sitzt dann als Objekt auf der Seite und lässt sich frei schieben und in der Größe ziehen.';
+  } else {
+    $('#copyHint').innerHTML = 'danach in OneNote <kbd>Cmd</kbd>+<kbd>V</kbd>';
+    $('#pasteStep').innerHTML = 'Cursor an die Stelle setzen, <kbd>Cmd</kbd>+<kbd>V</kbd>. Das Bild sitzt dann als Objekt auf der Seite und lässt sich frei schieben und in der Größe ziehen.';
+  }
+}
 
 document.addEventListener('keydown', e=>{
   if(e.target.matches('input,textarea,select')) return;

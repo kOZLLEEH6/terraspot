@@ -12,6 +12,13 @@ Jeder Push auf den eingestellten Branch veröffentlicht die neue Fassung.
 **Lokal:** `index.html` herunterladen und doppelklicken. Läuft ohne Netz, nur die
 Demo-Schrift fehlt dann.
 
+**Auf dem iPad:** die Website in Safari öffnen und über *Teilen → Zum Home-Bildschirm*
+ablegen. Startet dann im Vollbild und ist von Safaris Sieben-Tage-Aufräumung
+ausgenommen, die sonst den gespeicherten Zeichensatz mitnimmt. Mit dem Apple Pencil
+ist das Erfassen deutlich angenehmer als mit der Maus, und der Stiftdruck landet
+direkt in der Strichstärke. Sobald ein Stift erkannt wird, erscheint der Schalter
+**Nur Stift**, der die aufliegende Hand aussortiert.
+
 So oder so verlässt nichts den Rechner: es gibt keinen Server und keinen Upload. Die
 erfasste Handschrift liegt im `localStorage` des Browsers und in der Profildatei, die
 man selbst sichert.
@@ -45,6 +52,7 @@ eine aus, was den Stempel-Effekt vermeidet. Zwei bis drei reichen.
 | Scan | Homographie aus vier Punktpaaren (Gauß mit Pivotierung), bilineare Abtastung, adaptiver Schwellwert pro Zelle, Zusammenhangsanalyse gegen Sprenkel. |
 | Rendering | Pro Glyphe ein zwischengespeichertes Offscreen-Canvas, platziert mit Versatz, Drehung, Skalierung und Grundlinien-Drift aus einem gesäten Zufallsgenerator. |
 | Variation | Deterministisch über einen Seed, damit das Bild beim Reglerziehen ruhig bleibt und sich nur auf Knopfdruck neu würfelt. |
+| Stift | Pointer Events; `pointerType` trennt Stift von Finger, ab dem ersten Stiftkontakt greift der Handballenschutz. Ohne Druckerkennung leitet die Strichstärke sich aus der Schreibgeschwindigkeit ab. |
 
 ## Grenzen
 
@@ -53,8 +61,11 @@ eine aus, was den Stempel-Effekt vermeidet. Zwei bis drei reichen.
 * Transparente PNGs überleben den Weg über die Windows-Zwischenablage oft nicht
   (Alphakanal geht verloren, Hintergrund wird schwarz). Deshalb ist Weiß voreingestellt.
   Für echte Transparenz die Datei herunterladen und in OneNote ziehen.
-* Kopieren als Bild braucht Chrome oder Edge. Firefox kann die Clipboard-API nur
-  eingeschränkt, dort funktioniert der Download.
+* Kopieren als Bild braucht Chrome, Edge oder Safari. Firefox kann die Clipboard-API
+  nur eingeschränkt, dort funktioniert der Download.
+* Safari verlangt, dass das `ClipboardItem` synchron im Klick entsteht und den Blob
+  als Promise bekommt. Ein `await` vor dem `write()` kostet die Nutzergeste und der
+  Aufruf wird abgelehnt — deshalb sieht der Kopierpfad im Code etwas umständlich aus.
 * Wer in OneNote wirklich *tippen* statt Bilder einfügen will, braucht eine echte
   Schriftdatei. Calligraphr baut so eine TTF, dafür sieht dann jeder Buchstabe jedes
   Mal identisch aus.
