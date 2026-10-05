@@ -20,6 +20,8 @@
   const EASE_OUT = gsap && CustomEase ? "out" : "expo.out";
   const EASE_DRAWER = gsap && CustomEase ? "drawer" : "expo.out";
   if (motion) document.documentElement.classList.add("has-motion");
+  // Für Dialoge, Tabs und Warenkorb live prüfen: ein Umschalten im System wirkt sofort
+  const liveMotion = () => !!gsap && !reduceQuery.matches;
 
   // ---------- Formatierung ----------
   const money = (n) =>
@@ -141,7 +143,7 @@
       gsap.set(tiles, { clearProps: "opacity,transform" });
     }
 
-    const state = motion && Flip ? Flip.getState(tiles) : null;
+    const state = liveMotion() && Flip ? Flip.getState(tiles) : null;
     tiles.forEach((t) => t.classList.toggle("is-out", !(cat === "alle" || t.dataset.category === cat)));
     if (!state) return;
 
@@ -186,7 +188,7 @@
     dlg.classList.remove("is-closing");
     if (!dlg.open) dlg.showModal();
     lock();
-    if (motion) {
+    if (liveMotion()) {
       gsap.fromTo(panel, from, {
         opacity: 1, x: 0, y: 0, scale: 1,
         duration: opts.duration || (from.x ? 0.5 : 0.42),
@@ -205,7 +207,7 @@
         unlock();
         resolve();
       };
-      if (!motion) return done();
+      if (!liveMotion()) return done();
       dlg.classList.add("is-closing");
       gsap.to(panel, Object.assign({ duration: 0.22, ease: "power2.in", overwrite: true, onComplete: done }, to));
     });
@@ -219,7 +221,7 @@
       e.preventDefault();
       const href = c.getAttribute("href");
       close().then(() => {
-        if (href && href.startsWith("#")) document.querySelector(href).scrollIntoView({ behavior: motion ? "smooth" : "auto" });
+        if (href && href.startsWith("#")) document.querySelector(href).scrollIntoView({ behavior: liveMotion() ? "smooth" : "auto" });
       });
     });
   }
@@ -262,6 +264,7 @@
     const p = sel.print;
     sheetClosing = closeDialog(sheet, sheetPanel, Object.assign({ opacity: 0, y: 12, scale: 0.985 }, opts.to)).then(() => {
       sheetClosing = null;
+      $("[data-sheet-status]").textContent = "";
       setZoom(false);
       focusTile(p);
     });
@@ -283,7 +286,7 @@
     $$("[data-pane]", sheet).forEach((p) => {
       const on = p.dataset.pane === name;
       p.hidden = !on;
-      if (on && motion) gsap.fromTo(p, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" });
+      if (on && liveMotion()) gsap.fromTo(p, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" });
     });
     if (name !== "motiv") setZoom(false);
   }
@@ -383,7 +386,7 @@
     const next = list[(i + dir + list.length) % list.length];
     fillPrint(next);
     replacePrintState(next.id);
-    if (!motion) return;
+    if (!liveMotion()) return;
     gsap.fromTo([productImg, roomImg], { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" });
     gsap.fromTo(
       $$("[data-product-eyebrow], [data-product-title], [data-product-light], [data-product-text], [data-product-specs]", sheet),
@@ -514,7 +517,7 @@
   const MAX_QTY = 20;
 
   // Bewegung wird bei jedem Aufruf neu geprüft, ein Umschalten im System wirkt sofort
-  const cartMotion = () => !!gsap && !reduceQuery.matches;
+  const cartMotion = liveMotion;
   const canPop = typeof HTMLElement === "function" && typeof HTMLElement.prototype.showPopover === "function";
 
   const drawer = $("[data-cart]");
@@ -545,11 +548,22 @@
   let lastAdded = null;
   let undoState = null;
 
-  // Statusmeldungen: im offenen Warenkorb ist alles außerhalb inert, daher eigene Live-Region
+  // Statusmeldungen: Ein offener Dialog macht alles außerhalb inert, deshalb hat jeder
+  // Dialog eine eigene Live-Region. Das Ziel wird erst im nächsten Frame bestimmt, und
+  // Meldungen aus demselben Frame werden zu einem Satz zusammengefasst.
+  const sheetStatus = $("[data-sheet-status]");
+  let pendingMsgs = [];
   function announce(msg) {
-    const el = drawer.open ? drawerStatus : cartStatus;
-    el.textContent = "";
-    requestAnimationFrame(() => (el.textContent = msg));
+    if (!msg) return;
+    if (!pendingMsgs.length) requestAnimationFrame(flushAnnounce);
+    pendingMsgs.push(msg);
+  }
+  function flushAnnounce() {
+    const el = drawer.open ? drawerStatus : sheet.open ? sheetStatus : cartStatus;
+    const text = pendingMsgs.join(" ");
+    pendingMsgs = [];
+    [drawerStatus, sheetStatus, cartStatus].forEach((r) => (r.textContent = ""));
+    requestAnimationFrame(() => (el.textContent = text));
   }
   const freeText = (sub) => (sub >= FREE ? "Der Versand ist kostenlos." : `Noch ${money2(FREE - sub)} bis zum kostenlosen Versand.`);
 
@@ -600,9 +614,13 @@
     else gsap.to(trail, { xPercent: x, duration: dur, ease, delay, overwrite: true });
   }
 
+  // Name mit Format, damit mehrere Formate desselben Motivs unterscheidbar sind
+  const itemName = (i) => `${printById(i.id).title}, ${sizeLabel(sizeById(i.size), printById(i.id).orientation)}, ${materialById(i.material).label}`;
+
   function itemHTML(i) {
     const p = printById(i.id);
     const t = esc(p.title);
+    const name = esc(itemName(i));
     return `<li class="cart-item" data-key="${esc(itemKey(i))}">
       <div class="cart-item__thumb ${p.orientation === "landscape" ? "is-landscape" : ""}"><img src="${img(p.id, true)}" alt=""></div>
       <div>
@@ -611,12 +629,12 @@
       </div>
       <div class="cart-item__price"><span data-line-price>${money2(lineTotal(i))}</span></div>
       <div class="cart-item__row">
-        <div class="qty" role="group" aria-label="Anzahl ${t}">
-          <button type="button" data-qty="-1" aria-label="${i.qty === 1 ? `${t} entfernen` : "Eins weniger"}">−</button>
+        <div class="qty" role="group" aria-label="Anzahl ${name}">
+          <button type="button" data-qty="-1" aria-label="${i.qty === 1 ? `${name} entfernen` : "Eins weniger"}">−</button>
           <output aria-live="polite"><span>${i.qty}</span></output>
           <button type="button" data-qty="1" aria-label="Eins mehr"${i.qty >= MAX_QTY ? ' aria-disabled="true"' : ""}>+</button>
         </div>
-        <button class="remove" type="button" data-remove>Entfernen</button>
+        <button class="remove" type="button" data-remove aria-label="${name} entfernen">Entfernen</button>
       </div>
     </li>`;
   }
@@ -626,10 +644,15 @@
     return tpl.content.firstElementChild;
   }
 
+  let emptyShown = cart.length === 0;
+  let emptyTween = null;
   function renderList() {
     listEl.innerHTML = cart.map(itemHTML).join("");
     undoState = null;
+    if (emptyTween) { emptyTween.kill(); emptyTween = null; }
+    if (gsap) gsap.set([footEl, emptyEl], { clearProps: "transform,opacity" });
     const empty = cart.length === 0;
+    emptyShown = empty;
     emptyEl.hidden = !empty;
     footEl.hidden = empty;
   }
@@ -641,13 +664,20 @@
     if (animate && cartMotion()) gsap.fromTo(el, { y: 4 * dir, opacity: 0.35 }, { y: 0, opacity: 1, duration: 0.2, ease: "power2.out", overwrite: true });
   }
 
+  let hintTl = null;
+  let shipTl = null;
   function setHint(sub, animate) {
+    if (hintTl) {
+      hintTl.kill();
+      hintTl = null;
+      gsap.set(hintEl, { clearProps: "transform,opacity" });
+    }
     const text = freeText(sub);
     const isFree = sub >= FREE;
     if (hintEl.textContent === text) return;
     const flip = hintEl.classList.contains("is-free") !== isFree;
     if (animate && flip && cartMotion()) {
-      gsap.timeline()
+      hintTl = gsap.timeline({ onComplete: () => (hintTl = null) })
         .to(hintEl, { opacity: 0, y: -6, duration: 0.1, ease: "power2.in" })
         .add(() => { hintEl.textContent = text; hintEl.classList.toggle("is-free", isFree); })
         .fromTo(hintEl, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.18, ease: EASE_OUT });
@@ -660,7 +690,7 @@
   // Grenze 120 € überschritten: "6,90 €" wird durchgestrichen und weicht "kostenlos"
   function crossToFree() {
     const strike = $(".strike", shipWrap);
-    gsap.timeline()
+    shipTl = gsap.timeline({ onComplete: () => (shipTl = null) })
       .fromTo(strike, { scaleX: 0 }, { scaleX: 1, duration: 0.18, ease: "power2.out" })
       .to(shipText, { opacity: 0, duration: 0.08 })
       .add(() => {
@@ -679,6 +709,12 @@
   }
 
   function renderSums({ animate = false, dir = 1, prevSub = null } = {}) {
+    if (shipTl) {
+      shipTl.kill();
+      shipTl = null;
+      gsap.set($(".strike", shipWrap), { scaleX: 0 });
+      gsap.set(shipText, { clearProps: "transform,opacity" });
+    }
     const sub = subtotal();
     const ship = shipping();
     tick(subEl, money2(sub), dir, animate);
@@ -693,24 +729,25 @@
       shipWrap.classList.toggle("is-free", freeNow);
     }
     setHint(sub, animate);
-    if (prevSub !== null && (prevSub < FREE) !== freeNow) announce(freeNow ? "Der Versand ist jetzt kostenlos." : freeText(sub));
+    // Meldung nur, wenn die Grenze überschritten wurde; der Aufrufer sagt sie zusammen mit seiner an
+    return prevSub !== null && (prevSub >= FREE) !== freeNow ? (freeNow ? "Der Versand ist jetzt kostenlos." : freeText(sub)) : "";
   }
 
   function syncQtyButtons(li, i) {
-    const t = printById(i.id).title;
-    $('[data-qty="-1"]', li).setAttribute("aria-label", i.qty === 1 ? `${t} entfernen` : "Eins weniger");
+    $('[data-qty="-1"]', li).setAttribute("aria-label", i.qty === 1 ? `${itemName(i)} entfernen` : "Eins weniger");
     const plus = $('[data-qty="1"]', li);
     if (i.qty >= MAX_QTY) plus.setAttribute("aria-disabled", "true");
     else plus.removeAttribute("aria-disabled");
   }
 
   function afterChange(dir, prevSub) {
-    renderSums({ animate: true, dir, prevSub });
+    const shipMsg = renderSums({ animate: true, dir, prevSub });
     const f = freeF(subtotal());
     setMeter(drawerMeter, f);
     lastSeenF = f;
     renderBadge({ animate: true, dir });
     setCartLabel();
+    return shipMsg;
   }
 
   function changeQty(li, d) {
@@ -726,22 +763,30 @@
     if (cartMotion()) gsap.fromTo(out, { y: 8 * d, opacity: 0 }, { y: 0, opacity: 1, duration: 0.22, ease: EASE_OUT, overwrite: true });
     tick($("[data-line-price]", li), money2(lineTotal(i)), d, true);
     syncQtyButtons(li, i);
-    afterChange(d, prevSub);
+    announce(afterChange(d, prevSub));
   }
 
   function updateEmpty(animate) {
     const empty = cart.length === 0;
-    if (empty === footEl.hidden) return;
+    if (empty === emptyShown) return;
+    emptyShown = empty;
+    if (emptyTween) {
+      emptyTween.kill();
+      emptyTween = null;
+      gsap.set(footEl, { clearProps: "transform,opacity" });
+    }
     const anim = animate && cartMotion();
     if (empty) {
       const show = () => {
+        emptyTween = null;
+        if (cart.length) return;
         footEl.hidden = true;
         emptyEl.hidden = false;
         if (!anim) return;
         gsap.fromTo(emptyEl, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.32, ease: EASE_OUT, delay: 0.12, clearProps: "transform,opacity" });
         gsap.fromTo($(".cart-empty__mark", emptyEl), { rotation: -120 }, { rotation: -30, duration: 0.6, ease: EASE_OUT, delay: 0.12 });
       };
-      if (anim) gsap.to(footEl, { opacity: 0, y: 8, duration: 0.16, ease: "power2.in", onComplete: () => { gsap.set(footEl, { clearProps: "transform,opacity" }); show(); } });
+      if (anim) emptyTween = gsap.to(footEl, { opacity: 0, y: 8, duration: 0.16, ease: "power2.in", onComplete: () => { gsap.set(footEl, { clearProps: "transform,opacity" }); show(); } });
       else show();
     } else {
       emptyEl.hidden = true;
@@ -766,6 +811,7 @@
     save();
     li.classList.add("is-leaving");
     const title = printById(item.id).title;
+    const name = itemName(item);
 
     const swap = () => {
       $$(".cart-undo", listEl).forEach((r) => r.remove());
@@ -773,15 +819,16 @@
       const row = document.createElement("li");
       row.className = "cart-undo";
       row.dataset.undo = key;
-      row.innerHTML = `<span>${esc(title)} entfernt</span><button type="button" class="link-btn" data-undo-btn>Rückgängig</button>`;
+      row.innerHTML = `<span>${esc(title)} · ${esc(sizeLabel(sizeById(item.size), printById(item.id).orientation))} entfernt</span><button type="button" class="link-btn" data-undo-btn aria-label="${esc(name)} wieder hinzufügen">Rückgängig</button>`;
       li.replaceWith(row);
       undoState = { key, item, index };
       flipFrom(state);
       if (cartMotion()) gsap.fromTo(row.children, { opacity: 0 }, { opacity: 1, duration: 0.18 });
-      afterChange(-1, prevSub);
+      const shipMsg = afterChange(-1, prevSub);
       updateEmpty(true);
       $("[data-undo-btn]", row).focus();
-      announce(`${title} entfernt. Rückgängig möglich.`);
+      announce(`${name} entfernt. Rückgängig möglich.`);
+      announce(shipMsg);
     };
     if (cartMotion()) gsap.to(li.children, { opacity: 0, x: 20, duration: 0.16, ease: "power2.in", onComplete: swap });
     else swap();
@@ -800,10 +847,11 @@
     row.replaceWith(li);
     flipFrom(state);
     if (cartMotion()) gsap.fromTo(li.children, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.26, ease: EASE_OUT, clearProps: "transform,opacity" });
-    afterChange(1, prevSub);
+    const shipMsg = afterChange(1, prevSub);
     updateEmpty(true);
     $("[data-remove]", li).focus();
-    announce(`${printById(item.id).title} ist wieder im Warenkorb.`);
+    announce(`${itemName(item)} ist wieder im Warenkorb.`);
+    announce(shipMsg);
   }
 
   listEl.addEventListener("click", (e) => {
@@ -876,12 +924,15 @@
     closeDialog(drawer, drawerPanel, { x: "100%", duration: 0.28 }).then(() => {
       $$(".cart-undo", listEl).forEach((r) => r.remove());
       undoState = null;
+      drawerStatus.textContent = "";
     });
   wireDialog(drawer, closeDrawer);
 
   function openCart() {
     finishFlights();
     hideArrival(true);
+    cartStatus.textContent = "";
+    drawerStatus.textContent = "";
     renderList();
     renderSums();
     const f = freeF(subtotal());
