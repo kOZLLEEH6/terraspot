@@ -243,9 +243,9 @@ button { cursor: pointer; }
 .nav__cart {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 40px;
-  padding: 0 6px 0 16px;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 8px 0 16px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgb(14 19 32 / 0.6);
@@ -256,13 +256,16 @@ button { cursor: pointer; }
 a.nav__cart { padding-right: 16px; }
 .nav__cart:active { transform: scale(0.97); }
 @media (hover: hover) { .nav__cart:hover { border-color: var(--dust); } }
+/* Zähler: Kreis mit Ring um ihn herum. Der Ring ist die Bildmarke
+   und zeigt zugleich, wie viel bis zum Gratisversand fehlt. */
 .nav__count {
+  position: relative;
+  isolation: isolate;
   display: grid;
   place-items: center;
-  min-width: 28px;
+  width: 28px;
   height: 28px;
-  padding: 0 8px;
-  border-radius: 999px;
+  border-radius: 50%;
   background: var(--star);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -270,15 +273,66 @@ a.nav__cart { padding-right: 16px; }
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
-.nav__cart.has-items .nav__count { background: var(--k-star); }
+.nav__count::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--k-star);
+  opacity: 0;
+  transition: opacity 240ms var(--ease-out);
+}
+.nav__cart.has-items .nav__count::before { opacity: 1; }
+.nav__glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -2;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(245 185 132 / 0.55), rgb(245 185 132 / 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+.nav__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+  overflow: visible;
+  fill: none;
+  opacity: 0;
+  transform: rotate(-90deg) scaleY(-1);
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+.nav__cart.has-items .nav__ring { opacity: 1; }
+.nav__ring-track { stroke: var(--line); stroke-width: 1; transition: stroke 200ms ease; }
+.nav__ring-arc { stroke: var(--k-star); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
+.nav__ring-echo { stroke: var(--k-star); stroke-width: 1; opacity: 0; transform-box: fill-box; transform-origin: center; }
+@media (hover: hover) { .nav__cart:hover .nav__ring-track { stroke: var(--dust); } }
+.nav__digits {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  height: 1.25em;
+  line-height: 1.25em;
+  overflow: hidden;
+}
+.nav__digits b { grid-area: 1 / 1; font-weight: 500; text-align: center; }
 
 @media (max-width: 760px) {
   .nav__links { display: none; }
   .nav__cart { margin-left: auto; }
 }
 @media (max-width: 420px) {
-  .nav__cart > span:first-child { display: none; }
-  .nav__cart { padding: 0 6px; }
+  .nav__label { display: none; }
+  .nav__cart { padding: 0 8px; }
 }
 
 /* ---------- Hero ---------- */
@@ -1237,14 +1291,107 @@ html.is-locked { overflow: hidden; }
 .done__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 16px; }
 .done__actions .btn { flex: 1; }
 
-/* ---------- Toast & Flug-Animation ---------- */
+/* ---------- Warenkorb: Bewegung ---------- */
+.cart-item { position: relative; }
+.cart-item.is-new::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--k-star);
+  transform-origin: top;
+  animation: new-line 2040ms var(--ease-out) both;
+}
+@keyframes new-line {
+  0% { transform: scaleY(0); opacity: 1; }
+  12% { transform: scaleY(1); }
+  80% { opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+.cart-item.is-leaving { pointer-events: none; }
+.cart-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--dust);
+}
+.cart-undo .link-btn { font-family: var(--font-body); color: var(--star); }
+.qty output { display: inline-block; height: 1.5em; line-height: 1.5em; overflow: hidden; }
+.qty output span { display: inline-block; }
+.qty button { transition: transform 120ms var(--ease-out), opacity 200ms ease; }
+.qty button:active { transform: scale(0.9); }
+.qty button[aria-disabled="true"] { opacity: 0.35; cursor: default; }
+.sum dd { min-width: 9ch; text-align: right; }
+[data-line-price],
+[data-ship-text] { display: inline-block; }
+.ship-val { position: relative; display: inline-block; }
+.ship-val.is-free { color: var(--k-star); }
+.strike {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.drawer__foot .meter { margin-top: 4px; }
+.cart-empty__mark {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--k-star);
+  border-right-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-30deg);
+}
+.cart-empty__mark::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--star);
+}
+.done__mark { width: 48px; height: 48px; overflow: visible; }
+.done__ring {
+  fill: none;
+  stroke: var(--k-star);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  transform: rotate(15deg);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.done__dot { fill: var(--star); }
+.done__title:focus { outline: none; }
+
+/* ---------- Toast ---------- */
 .toast {
   position: fixed;
-  left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  inset: auto auto calc(env(safe-area-inset-bottom, 0px) + 24px) 50%;
   z-index: 60;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
   padding: 12px 18px;
+  border: 0;
   border-radius: 3px;
+  overflow: visible;
   background: var(--star);
   color: var(--ink);
   font-size: 0.9375rem;
@@ -1255,16 +1402,182 @@ html.is-locked { overflow: hidden; }
 }
 .toast.is-visible { transform: translate(-50%, 0); }
 
-.fly {
-  position: fixed;
-  z-index: 70;
-  margin: 0;
-  padding: 3px;
-  background: var(--paper);
-  pointer-events: none;
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
-.fly img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Sternspur & Ankunft ---------- */
+.fx {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+  pointer-events: none;
+  contain: strict;
+}
+.fx.is-on { display: block; }
+.fx:popover-open { display: block; }
+.fx > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+.fx__paper { --lift: 0; }
+.fx__paper::before,
+.fx__paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--lift);
+}
+.fx__paper::after { box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6); }
+.fx__paper.has-edge::before { background: var(--paper); }
+.fx__paper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fx__paper.has-edge img { inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); }
+.fx__star {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6ec 0 1.5px, rgb(245 185 132 / 0.9) 2.5px, rgb(245 185 132 / 0.25) 6px, rgb(245 185 132 / 0) 12px);
+  opacity: 0;
+}
+.fx__seg {
+  width: 10px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--k-star);
+  transform-origin: 0 50%;
+  opacity: 0;
+}
+
+.arrival {
+  position: fixed;
+  top: 72px;
+  right: var(--gutter);
+  z-index: 41;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgb(14 19 32 / 0.96);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 40px -12px rgb(0 0 0 / 0.6);
+  pointer-events: none;
+}
+@media (max-width: 759px) {
+  .arrival { left: 16px; right: 16px; width: auto; }
+}
+.arrival__thumb { padding: 3px; background: var(--paper); }
+.arrival__thumb img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+.arrival__thumb.is-landscape img { aspect-ratio: 3 / 2; }
+.arrival__body { min-width: 0; }
+.arrival__body p { margin: 0; }
+.arrival__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--k-star);
+}
+.arrival__title { margin-top: 2px !important; font-family: var(--font-display); font-size: 1.0625rem; line-height: 1.25; }
+.arrival__opts { margin-top: 2px !important; font-family: var(--font-mono); font-size: 0.75rem; color: var(--dust); }
+.arrival .meter { margin-top: 10px; }
+.arrival__ship {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px !important;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--haze);
+}
+
+/* Belichtungsmesser: Fortschritt bis zum Gratisversand */
+.meter { display: flex; align-items: center; gap: 10px; }
+.meter__track {
+  position: relative;
+  flex: 1;
+  height: 12px;
+  clip-path: inset(-8px -8px -8px 0);
+}
+.meter__track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: var(--line);
+}
+.meter__trail { position: absolute; inset: 0; }
+.meter__trail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgb(245 185 132 / 0), rgb(245 185 132 / 0.35) 45%, var(--k-star));
+}
+.meter__head {
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #fff6ec;
+  box-shadow: 0 0 0 2px rgb(245 185 132 / 0.3), 0 0 8px rgb(245 185 132 / 0.6);
+}
+.meter__max { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--dust); font-variant-numeric: tabular-nums; }
+
+/* geschlossene Bildmarke vor "Versand kostenlos" */
+.free-hint.is-free,
+.arrival__ship.is-free { color: var(--k-star); }
+.free-hint.is-free::before,
+.arrival__ship.is-free::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  vertical-align: -1px;
+  box-sizing: border-box;
+}
+.arrival__ship.is-free::before { margin-right: 0; }
 
 /* ---------- Weniger Bewegung ---------- */
 @media (prefers-reduced-motion: reduce) {

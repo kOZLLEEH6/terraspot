@@ -31,9 +31,17 @@
       <a href="#formate">Formate</a>
       <a href="#ueber">Über mich</a>
     </nav>
-    <button class="nav__cart" type="button" data-open-cart aria-label="Warenkorb öffnen">
-      <span>Warenkorb</span>
-      <span class="nav__count" data-cart-count aria-live="polite">0</span>
+    <button class="nav__cart" type="button" data-open-cart aria-label="Warenkorb öffnen, leer">
+      <span class="nav__label">Warenkorb</span>
+      <span class="nav__count" data-cart-count>
+        <span class="nav__glow" data-cart-glow aria-hidden="true"></span>
+        <svg class="nav__ring" viewBox="0 0 40 40" aria-hidden="true">
+          <circle class="nav__ring-track" cx="20" cy="20" r="17"/>
+          <circle class="nav__ring-arc" data-cart-arc cx="20" cy="20" r="17" pathLength="100"/>
+          <circle class="nav__ring-echo" data-cart-echo cx="20" cy="20" r="17"/>
+        </svg>
+        <span class="nav__digits" data-cart-digits aria-hidden="true"><b>0</b></span>
+      </span>
     </button>
   </header>
 
@@ -267,6 +275,7 @@
   <!-- Warenkorb -->
   <dialog class="drawer" data-cart aria-labelledby="cart-title">
     <div class="drawer__panel">
+      <p class="sr-only" role="status" aria-live="polite" data-drawer-status></p>
       <div class="drawer__head">
         <h2 id="cart-title" data-cart-title>Warenkorb</h2>
         <button class="icon-btn" type="button" data-close aria-label="Warenkorb schließen">
@@ -277,16 +286,21 @@
       <div class="drawer__step" data-step="cart">
         <ul class="cart-list" data-cart-list></ul>
         <div class="cart-empty" data-cart-empty>
+          <span class="cart-empty__mark" aria-hidden="true"></span>
           <p>Noch nichts drin. Such dir ein Motiv aus und wähl ein Format.</p>
           <a class="btn btn--ghost" href="#prints" data-close>Zu den Prints</a>
         </div>
         <div class="drawer__foot" data-cart-foot>
           <dl class="sum">
             <div><dt>Zwischensumme</dt><dd data-subtotal></dd></div>
-            <div><dt>Versand</dt><dd data-shipping></dd></div>
+            <div><dt>Versand</dt><dd data-shipping><span class="ship-val" data-ship-wrap><span data-ship-text></span><i class="strike" aria-hidden="true"></i></span></dd></div>
             <div class="sum__total"><dt>Gesamt</dt><dd data-total></dd></div>
           </dl>
-          <p class="fine" data-free-hint></p>
+          <div class="meter" data-cart-meter aria-hidden="true">
+            <div class="meter__track"><div class="meter__trail"><span class="meter__head"></span></div></div>
+            <span class="meter__max" data-meter-max></span>
+          </div>
+          <p class="fine free-hint" data-free-hint></p>
           <button class="btn btn--accent btn--block" type="button" data-to-checkout>Weiter zur Bestellung</button>
         </div>
       </div>
@@ -340,8 +354,12 @@
       </form>
 
       <div class="drawer__step done" data-step="done" hidden>
+        <svg class="done__mark" viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="done__ring" cx="24" cy="24" r="20" pathLength="100"/>
+          <circle class="done__dot" cx="24" cy="24" r="2.5"/>
+        </svg>
         <p class="eyebrow" data-done-eyebrow>Anfrage vorbereitet</p>
-        <h3 class="done__title" data-done-title>Fast geschafft</h3>
+        <h3 class="done__title" data-done-title tabindex="-1">Fast geschafft</h3>
         <p data-done-text></p>
         <pre class="done__order" data-done-order></pre>
         <div class="done__actions">
@@ -352,11 +370,30 @@
     </div>
   </dialog>
 
-  <div class="toast" data-toast role="status" aria-live="polite"></div>
+  <!-- Flugebene für die Sternspur (liegt per Popover über offenen Dialogen) -->
+  <div class="fx" popover="manual" aria-hidden="true" data-fx></div>
+
+  <!-- Ankunftskarte unter dem Warenkorb-Button, rein visuell -->
+  <div class="arrival" data-arrival aria-hidden="true" hidden>
+    <div class="arrival__thumb" data-arrival-thumb><img alt="" data-arrival-img></div>
+    <div class="arrival__body" data-arrival-body>
+      <p class="arrival__eyebrow">Im Warenkorb</p>
+      <p class="arrival__title" data-arrival-title></p>
+      <p class="arrival__opts" data-arrival-opts></p>
+      <div class="meter" data-arrival-meter>
+        <div class="meter__track"><div class="meter__trail"><span class="meter__head"></span></div></div>
+      </div>
+      <p class="arrival__ship" data-arrival-ship></p>
+    </div>
+  </div>
+
+  <p class="sr-only" role="status" aria-live="polite" data-cart-status></p>
+  <div class="toast" data-toast popover="manual" aria-hidden="true"></div>
 
   <script src="vendor/gsap.min.js" defer></script>
   <script src="vendor/ScrollTrigger.min.js" defer></script>
   <script src="vendor/Flip.min.js" defer></script>
+  <script src="vendor/CustomEase.min.js" defer></script>
   <script src="js/config.js" defer></script>
   <script src="js/sky.js" defer></script>
   <script src="js/app.js" defer></script>

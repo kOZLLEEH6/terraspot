@@ -8,9 +8,17 @@
   const gsap = window.gsap;
   const ScrollTrigger = window.ScrollTrigger;
   const Flip = window.Flip;
+  const CustomEase = window.CustomEase;
   const reduceQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const motion = !!(gsap && ScrollTrigger) && !reduceQuery.matches;
-  if (gsap) gsap.registerPlugin(...[ScrollTrigger, Flip].filter(Boolean));
+  if (gsap) gsap.registerPlugin(...[ScrollTrigger, Flip, CustomEase].filter(Boolean));
+  // dieselben Kurven wie im CSS (--ease-out, --ease-drawer)
+  if (gsap && CustomEase) {
+    CustomEase.create("out", "0.23,1,0.32,1");
+    CustomEase.create("drawer", "0.32,0.72,0,1");
+  }
+  const EASE_OUT = gsap && CustomEase ? "out" : "expo.out";
+  const EASE_DRAWER = gsap && CustomEase ? "drawer" : "expo.out";
   if (motion) document.documentElement.classList.add("has-motion");
 
   // ---------- Formatierung ----------
@@ -55,6 +63,16 @@
   let toastTimer = 0;
   function toast(msg) {
     toastEl.textContent = msg;
+    // über einem offenen Dialog sichtbar: als Popover neu in den Top Layer holen
+    if (typeof toastEl.showPopover === "function") {
+      try {
+        toastEl.classList.remove("is-visible");
+        if (toastEl.matches(":popover-open")) toastEl.hidePopover();
+        toastEl.showPopover();
+        void toastEl.offsetWidth;
+      } catch (_) { /* ohne Popover-API bleibt es beim normalen Toast */ }
+    }
+    if (typeof announce === "function") announce(msg);
     toastEl.classList.add("is-visible");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove("is-visible"), 2600);
@@ -162,11 +180,20 @@
   function lock() { html.classList.add("is-locked"); }
   function unlock() { if (!$("dialog[open]")) html.classList.remove("is-locked"); }
 
-  function openDialog(dlg, panel, from) {
+  function openDialog(dlg, panel, from, opts = {}) {
+    finishFlights();
+    hideArrival(true);
     dlg.classList.remove("is-closing");
     if (!dlg.open) dlg.showModal();
     lock();
-    if (motion) gsap.fromTo(panel, from, { opacity: 1, x: 0, y: 0, scale: 1, duration: from.x ? 0.5 : 0.42, ease: from.x ? "expo.out" : "power3.out", overwrite: true });
+    if (motion) {
+      gsap.fromTo(panel, from, {
+        opacity: 1, x: 0, y: 0, scale: 1,
+        duration: opts.duration || (from.x ? 0.5 : 0.42),
+        ease: opts.ease || (from.x ? "expo.out" : "power3.out"),
+        overwrite: true,
+      });
+    }
   }
   function closeDialog(dlg, panel, to) {
     return new Promise((resolve) => {
@@ -233,7 +260,7 @@
     if (!sheet.open) return Promise.resolve();
     if (!opts.fromHistory) leavePrintState();
     const p = sel.print;
-    sheetClosing = closeDialog(sheet, sheetPanel, { opacity: 0, y: 12, scale: 0.985 }).then(() => {
+    sheetClosing = closeDialog(sheet, sheetPanel, Object.assign({ opacity: 0, y: 12, scale: 0.985 }, opts.to)).then(() => {
       sheetClosing = null;
       setZoom(false);
       focusTile(p);
@@ -481,131 +508,713 @@
   const subtotal = () => cart.reduce((s, i) => s + lineTotal(i), 0);
   const shipping = () => (cart.length === 0 || subtotal() >= SHOP.shipping.freeFrom ? 0 : SHOP.shipping.flat);
   const count = () => cart.reduce((s, i) => s + i.qty, 0);
+  const itemKey = (i) => `${i.id}|${i.size}|${i.material}`;
+  const FREE = SHOP.shipping.freeFrom;
+  const freeF = (sub) => Math.min(1, sub / FREE);
+  const MAX_QTY = 20;
+
+  // Bewegung wird bei jedem Aufruf neu geprüft, ein Umschalten im System wirkt sofort
+  const cartMotion = () => !!gsap && !reduceQuery.matches;
+  const canPop = typeof HTMLElement === "function" && typeof HTMLElement.prototype.showPopover === "function";
 
   const drawer = $("[data-cart]");
   const drawerPanel = $(".drawer__panel", drawer);
   const cartBtn = $("[data-open-cart]");
   const countEl = $("[data-cart-count]");
+  const digitsEl = $("[data-cart-digits]");
+  const arcEl = $("[data-cart-arc]");
+  const echoEl = $("[data-cart-echo]");
+  const glowEl = $("[data-cart-glow]");
+  const listEl = $("[data-cart-list]");
+  const footEl = $("[data-cart-foot]");
+  const emptyEl = $("[data-cart-empty]");
+  const titleEl = $("[data-cart-title]");
+  const hintEl = $("[data-free-hint]");
+  const shipWrap = $("[data-ship-wrap]");
+  const shipText = $("[data-ship-text]");
+  const subEl = $("[data-subtotal]");
+  const totalEl = $("[data-total]");
+  const drawerMeter = $("[data-cart-meter]");
+  const cartStatus = $("[data-cart-status]");
+  const drawerStatus = $("[data-drawer-status]");
+  $("[data-meter-max]").textContent = money(FREE);
 
-  function renderCart() {
+  let shownN = count();
+  let celebrated = false; // Kreisschluss nur einmal pro Besuch feiern
+  let lastSeenF = freeF(subtotal());
+  let lastAdded = null;
+  let undoState = null;
+
+  // Statusmeldungen: im offenen Warenkorb ist alles außerhalb inert, daher eigene Live-Region
+  function announce(msg) {
+    const el = drawer.open ? drawerStatus : cartStatus;
+    el.textContent = "";
+    requestAnimationFrame(() => (el.textContent = msg));
+  }
+  const freeText = (sub) => (sub >= FREE ? "Der Versand ist kostenlos." : `Noch ${money2(FREE - sub)} bis zum kostenlosen Versand.`);
+
+  function setCartLabel() {
     const n = count();
-    countEl.textContent = n;
-    cartBtn.classList.toggle("has-items", n > 0);
-    cartBtn.setAttribute("aria-label", n ? `Warenkorb öffnen, ${n} ${n === 1 ? "Print" : "Prints"}` : "Warenkorb öffnen, leer");
-
-    $("[data-cart-list]").innerHTML = cart
-      .map((i, idx) => {
-        const p = printById(i.id);
-        return `<li class="cart-item">
-          <div class="cart-item__thumb ${p.orientation === "landscape" ? "is-landscape" : ""}"><img src="${img(p.id, true)}" alt=""></div>
-          <div>
-            <div class="cart-item__title">${esc(p.title)}</div>
-            <div class="cart-item__opts">${sizeLabel(sizeById(i.size), p.orientation)} · ${esc(materialById(i.material).label)}</div>
-          </div>
-          <div class="cart-item__price">${money2(lineTotal(i))}</div>
-          <div class="cart-item__row">
-            <div class="qty" role="group" aria-label="Anzahl ${esc(p.title)}">
-              <button type="button" data-qty="-1" data-idx="${idx}" aria-label="Eins weniger">−</button>
-              <output aria-live="polite">${i.qty}</output>
-              <button type="button" data-qty="1" data-idx="${idx}" aria-label="Eins mehr">+</button>
-            </div>
-            <button class="remove" type="button" data-remove="${idx}">Entfernen</button>
-          </div>
-        </li>`;
-      })
-      .join("");
-
-    const empty = cart.length === 0;
-    $("[data-cart-empty]").hidden = !empty;
-    $("[data-cart-foot]").hidden = empty;
-    $("[data-subtotal]").textContent = money2(subtotal());
-    $("[data-shipping]").textContent = shipping() ? money2(shipping()) : "kostenlos";
-    $("[data-total]").textContent = money2(subtotal() + shipping());
-    $("[data-total-2]").textContent = money2(subtotal() + shipping());
-    const missing = SHOP.shipping.freeFrom - subtotal();
-    $("[data-free-hint]").textContent = missing > 0 ? `Noch ${money2(missing)} bis zum kostenlosen Versand.` : "Der Versand ist kostenlos.";
+    const sub = subtotal();
+    cartBtn.setAttribute(
+      "aria-label",
+      n ? `Warenkorb öffnen, ${n} ${n === 1 ? "Print" : "Prints"}, ${sub >= FREE ? "Versand kostenlos" : `noch ${money2(FREE - sub)} bis zum kostenlosen Versand`}` : "Warenkorb öffnen, leer"
+    );
   }
 
-  $("[data-cart-list]").addEventListener("click", (e) => {
-    const q = e.target.closest("[data-qty]");
-    const r = e.target.closest("[data-remove]");
-    if (q) {
-      const i = cart[+q.dataset.idx];
-      i.qty = Math.max(0, Math.min(20, i.qty + +q.dataset.qty));
-      if (i.qty === 0) cart.splice(+q.dataset.idx, 1);
-    } else if (r) {
-      cart.splice(+r.dataset.remove, 1);
-    } else return;
+  // Zähler mit rollenden Ziffern und Ring
+  const digitText = (n) => (n > 99 ? "99+" : String(n));
+  function renderBadge({ animate = false, dir = 1, n = count(), sub = subtotal() } = {}) {
+    const anim = animate && cartMotion();
+    cartBtn.classList.toggle("has-items", n > 0);
+    const offset = 100 - freeF(sub) * 100;
+    if (anim) gsap.to(arcEl, { strokeDashoffset: offset, duration: 0.3, ease: "power3.out", overwrite: true });
+    else if (gsap) gsap.set(arcEl, { strokeDashoffset: offset, overwrite: true });
+    else arcEl.style.strokeDashoffset = offset;
+
+    const bs = Array.from(digitsEl.children);
+    if (gsap) gsap.killTweensOf(bs);
+    bs.slice(0, -1).forEach((b) => b.remove());
+    const old = digitsEl.lastElementChild;
+    if (!anim || n === shownN) {
+      if (gsap) gsap.set(old, { clearProps: "all" });
+      old.textContent = digitText(n);
+      shownN = n;
+      return;
+    }
+    const neu = document.createElement("b");
+    neu.textContent = digitText(n);
+    digitsEl.appendChild(neu);
+    gsap.fromTo(neu, { yPercent: 100 * dir, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.26, ease: EASE_OUT });
+    gsap.to(old, { yPercent: -100 * dir, opacity: 0, duration: 0.26, ease: EASE_OUT, onComplete: () => old.remove() });
+    shownN = n;
+  }
+
+  // Belichtungsmesser: nur xPercent der Spur wird bewegt
+  function setMeter(el, f, { instant = false, dur = 0.42, ease = EASE_OUT, delay = 0 } = {}) {
+    const trail = el && $(".meter__trail", el);
+    if (!trail) return;
+    const x = (f - 1) * 100;
+    if (!gsap) { trail.style.transform = `translateX(${x}%)`; return; }
+    if (instant || !cartMotion()) gsap.set(trail, { xPercent: x, overwrite: true });
+    else gsap.to(trail, { xPercent: x, duration: dur, ease, delay, overwrite: true });
+  }
+
+  function itemHTML(i) {
+    const p = printById(i.id);
+    const t = esc(p.title);
+    return `<li class="cart-item" data-key="${esc(itemKey(i))}">
+      <div class="cart-item__thumb ${p.orientation === "landscape" ? "is-landscape" : ""}"><img src="${img(p.id, true)}" alt=""></div>
+      <div>
+        <div class="cart-item__title">${t}</div>
+        <div class="cart-item__opts">${sizeLabel(sizeById(i.size), p.orientation)} · ${esc(materialById(i.material).label)}</div>
+      </div>
+      <div class="cart-item__price"><span data-line-price>${money2(lineTotal(i))}</span></div>
+      <div class="cart-item__row">
+        <div class="qty" role="group" aria-label="Anzahl ${t}">
+          <button type="button" data-qty="-1" aria-label="${i.qty === 1 ? `${t} entfernen` : "Eins weniger"}">−</button>
+          <output aria-live="polite"><span>${i.qty}</span></output>
+          <button type="button" data-qty="1" aria-label="Eins mehr"${i.qty >= MAX_QTY ? ' aria-disabled="true"' : ""}>+</button>
+        </div>
+        <button class="remove" type="button" data-remove>Entfernen</button>
+      </div>
+    </li>`;
+  }
+  function liFor(i) {
+    const tpl = document.createElement("template");
+    tpl.innerHTML = itemHTML(i).trim();
+    return tpl.content.firstElementChild;
+  }
+
+  function renderList() {
+    listEl.innerHTML = cart.map(itemHTML).join("");
+    undoState = null;
+    const empty = cart.length === 0;
+    emptyEl.hidden = !empty;
+    footEl.hidden = empty;
+  }
+
+  // Wert setzen und kurz "einticken" lassen, dir +1 = kommt von unten
+  function tick(el, text, dir, animate) {
+    if (el.textContent === text) return;
+    el.textContent = text;
+    if (animate && cartMotion()) gsap.fromTo(el, { y: 4 * dir, opacity: 0.35 }, { y: 0, opacity: 1, duration: 0.2, ease: "power2.out", overwrite: true });
+  }
+
+  function setHint(sub, animate) {
+    const text = freeText(sub);
+    const isFree = sub >= FREE;
+    if (hintEl.textContent === text) return;
+    const flip = hintEl.classList.contains("is-free") !== isFree;
+    if (animate && flip && cartMotion()) {
+      gsap.timeline()
+        .to(hintEl, { opacity: 0, y: -6, duration: 0.1, ease: "power2.in" })
+        .add(() => { hintEl.textContent = text; hintEl.classList.toggle("is-free", isFree); })
+        .fromTo(hintEl, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.18, ease: EASE_OUT });
+    } else {
+      hintEl.textContent = text;
+      hintEl.classList.toggle("is-free", isFree);
+    }
+  }
+
+  // Grenze 120 € überschritten: "6,90 €" wird durchgestrichen und weicht "kostenlos"
+  function crossToFree() {
+    const strike = $(".strike", shipWrap);
+    gsap.timeline()
+      .fromTo(strike, { scaleX: 0 }, { scaleX: 1, duration: 0.18, ease: "power2.out" })
+      .to(shipText, { opacity: 0, duration: 0.08 })
+      .add(() => {
+        shipText.textContent = "kostenlos";
+        shipWrap.classList.add("is-free");
+        gsap.set(strike, { scaleX: 0 });
+      })
+      .fromTo(shipText, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.2, ease: EASE_OUT });
+    if (!celebrated) {
+      celebrated = true;
+      const head = $(".meter__head", drawerMeter);
+      gsap.timeline({ delay: 0.3 })
+        .to(head, { scale: 1.8, duration: 0.1, ease: "power2.out" })
+        .to(head, { scale: 1, duration: 0.2, ease: "power2.inOut" });
+    }
+  }
+
+  function renderSums({ animate = false, dir = 1, prevSub = null } = {}) {
+    const sub = subtotal();
+    const ship = shipping();
+    tick(subEl, money2(sub), dir, animate);
+    tick(totalEl, money2(sub + ship), dir, animate);
+    $("[data-total-2]").textContent = money2(sub + ship);
+
+    const freeNow = sub >= FREE;
+    const crossedUp = prevSub !== null && prevSub < FREE && freeNow;
+    if (animate && crossedUp && cartMotion()) crossToFree();
+    else {
+      tick(shipText, freeNow ? "kostenlos" : money2(SHOP.shipping.flat), dir, animate);
+      shipWrap.classList.toggle("is-free", freeNow);
+    }
+    setHint(sub, animate);
+    if (prevSub !== null && (prevSub < FREE) !== freeNow) announce(freeNow ? "Der Versand ist jetzt kostenlos." : freeText(sub));
+  }
+
+  function syncQtyButtons(li, i) {
+    const t = printById(i.id).title;
+    $('[data-qty="-1"]', li).setAttribute("aria-label", i.qty === 1 ? `${t} entfernen` : "Eins weniger");
+    const plus = $('[data-qty="1"]', li);
+    if (i.qty >= MAX_QTY) plus.setAttribute("aria-disabled", "true");
+    else plus.removeAttribute("aria-disabled");
+  }
+
+  function afterChange(dir, prevSub) {
+    renderSums({ animate: true, dir, prevSub });
+    const f = freeF(subtotal());
+    setMeter(drawerMeter, f);
+    lastSeenF = f;
+    renderBadge({ animate: true, dir });
+    setCartLabel();
+  }
+
+  function changeQty(li, d) {
+    const i = cart.find((x) => itemKey(x) === li.dataset.key);
+    if (!i) return;
+    if (d > 0 && i.qty >= MAX_QTY) return;
+    if (d < 0 && i.qty <= 1) return removeItem(li);
+    const prevSub = subtotal();
+    i.qty += d;
     save();
-    renderCart();
+    const out = $("output span", li);
+    out.textContent = i.qty;
+    if (cartMotion()) gsap.fromTo(out, { y: 8 * d, opacity: 0 }, { y: 0, opacity: 1, duration: 0.22, ease: EASE_OUT, overwrite: true });
+    tick($("[data-line-price]", li), money2(lineTotal(i)), d, true);
+    syncQtyButtons(li, i);
+    afterChange(d, prevSub);
+  }
+
+  function updateEmpty(animate) {
+    const empty = cart.length === 0;
+    if (empty === footEl.hidden) return;
+    const anim = animate && cartMotion();
+    if (empty) {
+      const show = () => {
+        footEl.hidden = true;
+        emptyEl.hidden = false;
+        if (!anim) return;
+        gsap.fromTo(emptyEl, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.32, ease: EASE_OUT, delay: 0.12, clearProps: "transform,opacity" });
+        gsap.fromTo($(".cart-empty__mark", emptyEl), { rotation: -120 }, { rotation: -30, duration: 0.6, ease: EASE_OUT, delay: 0.12 });
+      };
+      if (anim) gsap.to(footEl, { opacity: 0, y: 8, duration: 0.16, ease: "power2.in", onComplete: () => { gsap.set(footEl, { clearProps: "transform,opacity" }); show(); } });
+      else show();
+    } else {
+      emptyEl.hidden = true;
+      footEl.hidden = false;
+      if (anim) gsap.fromTo(footEl, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, ease: EASE_OUT, clearProps: "transform,opacity" });
+    }
+  }
+
+  function flipFrom(state) {
+    if (state) Flip.from(state, { duration: 0.32, ease: EASE_DRAWER, simple: true });
+  }
+  const flipState = () => (cartMotion() && Flip ? Flip.getState($$(".cart-item:not(.is-leaving), .cart-undo", listEl).concat(footEl)) : null);
+
+  // Entfernen: Zeile gleitet raus, die anderen rücken per Flip nach, an ihre Stelle tritt "Rückgängig"
+  function removeItem(li) {
+    if (li.classList.contains("is-leaving")) return;
+    const key = li.dataset.key;
+    const index = cart.findIndex((x) => itemKey(x) === key);
+    if (index < 0) return;
+    const prevSub = subtotal();
+    const [item] = cart.splice(index, 1);
+    save();
+    li.classList.add("is-leaving");
+    const title = printById(item.id).title;
+
+    const swap = () => {
+      $$(".cart-undo", listEl).forEach((r) => r.remove());
+      const state = flipState();
+      const row = document.createElement("li");
+      row.className = "cart-undo";
+      row.dataset.undo = key;
+      row.innerHTML = `<span>${esc(title)} entfernt</span><button type="button" class="link-btn" data-undo-btn>Rückgängig</button>`;
+      li.replaceWith(row);
+      undoState = { key, item, index };
+      flipFrom(state);
+      if (cartMotion()) gsap.fromTo(row.children, { opacity: 0 }, { opacity: 1, duration: 0.18 });
+      afterChange(-1, prevSub);
+      updateEmpty(true);
+      $("[data-undo-btn]", row).focus();
+      announce(`${title} entfernt. Rückgängig möglich.`);
+    };
+    if (cartMotion()) gsap.to(li.children, { opacity: 0, x: 20, duration: 0.16, ease: "power2.in", onComplete: swap });
+    else swap();
+  }
+
+  function undo(row) {
+    if (!undoState || row.dataset.undo !== undoState.key) return;
+    const { item, index } = undoState;
+    undoState = null;
+    if (cart.some((x) => itemKey(x) === itemKey(item))) { renderList(); return; }
+    const prevSub = subtotal();
+    cart.splice(Math.min(index, cart.length), 0, item);
+    save();
+    const state = flipState();
+    const li = liFor(item);
+    row.replaceWith(li);
+    flipFrom(state);
+    if (cartMotion()) gsap.fromTo(li.children, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.26, ease: EASE_OUT, clearProps: "transform,opacity" });
+    afterChange(1, prevSub);
+    updateEmpty(true);
+    $("[data-remove]", li).focus();
+    announce(`${printById(item.id).title} ist wieder im Warenkorb.`);
+  }
+
+  listEl.addEventListener("click", (e) => {
+    const undoBtn = e.target.closest("[data-undo-btn]");
+    if (undoBtn) return undo(undoBtn.closest(".cart-undo"));
+    const li = e.target.closest(".cart-item");
+    if (!li || li.classList.contains("is-leaving")) return;
+    const q = e.target.closest("[data-qty]");
+    if (q) {
+      if (q.getAttribute("aria-disabled") === "true") return;
+      return changeQty(li, +q.dataset.qty);
+    }
+    if (e.target.closest("[data-remove]")) removeItem(li);
   });
 
-  function showStep(name) {
-    $$("[data-step]", drawer).forEach((s) => (s.hidden = s.dataset.step !== name));
-    $("[data-cart-title]").textContent = name === "checkout" ? "Bestellung" : name === "done" ? "Danke" : "Warenkorb";
-    drawerPanel.scrollTop = 0;
-    if (motion) gsap.fromTo($(`[data-step="${name}"]`, drawer), { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" });
+  // Schritte wechseln in Leserichtung
+  const ORDER = { cart: 0, checkout: 1, done: 2 };
+  const TITLES = { cart: "Warenkorb", checkout: "Bestellung", done: "Danke" };
+  let step = "cart";
+  let stepTl = null;
+
+  function focusStep(name) {
+    const target =
+      name === "checkout" ? $("[data-back]", drawer)
+        : name === "done" ? $("[data-done-title]", drawer)
+          : footEl.hidden ? $(".cart-empty .btn", drawer) : $("[data-to-checkout]", drawer);
+    if (target) target.focus({ preventScroll: true });
   }
 
-  const closeDrawer = () => closeDialog(drawer, drawerPanel, { x: "100%", duration: 0.28 });
+  function playDone(animate) {
+    const ring = $(".done__ring", drawer);
+    const dot = $(".done__dot", drawer);
+    if (!animate || !cartMotion()) {
+      if (gsap) gsap.set([ring, dot], { clearProps: "all" });
+      return;
+    }
+    const texts = $$('[data-step="done"] > :not(.done__mark)', drawer);
+    gsap.fromTo(ring, { strokeDashoffset: 25 }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" });
+    gsap.fromTo(dot, { scale: 0.6, opacity: 0, transformOrigin: "50% 50%" }, { scale: 1, opacity: 1, duration: 0.2, ease: EASE_OUT, delay: 0.5 });
+    gsap.fromTo(texts, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: EASE_OUT, stagger: 0.05, delay: 0.15, clearProps: "transform,opacity" });
+  }
+
+  function showStep(name, { animate = true, focus = true } = {}) {
+    if (stepTl) stepTl.progress(1);
+    const from = $(`[data-step="${step}"]`, drawer);
+    const to = $(`[data-step="${name}"]`, drawer);
+    const dir = ORDER[name] >= ORDER[step] ? 1 : -1;
+    const swap = () => {
+      $$("[data-step]", drawer).forEach((s) => (s.hidden = s.dataset.step !== name));
+      titleEl.textContent = TITLES[name];
+      drawerPanel.scrollTop = 0;
+      step = name;
+      if (focus) focusStep(name);
+    };
+    if (!animate || from === to || !cartMotion()) {
+      swap();
+      if (animate && from !== to && gsap) gsap.fromTo(to, { opacity: 0 }, { opacity: 1, duration: 0.12 });
+      if (name === "done") playDone(false);
+      return;
+    }
+    stepTl = gsap.timeline({ onComplete: () => { gsap.set(from, { clearProps: "transform,opacity" }); stepTl = null; } })
+      .to(from, { opacity: 0, x: -12 * dir, duration: 0.12, ease: "power2.in" })
+      .add(swap)
+      .fromTo(to, { opacity: 0, x: 20 * dir }, { opacity: 1, x: 0, duration: 0.3, ease: EASE_OUT, clearProps: "transform,opacity" })
+      .fromTo(titleEl, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.24, ease: EASE_OUT, clearProps: "transform,opacity" }, "<");
+    if (name === "done") stepTl.add(() => playDone(true), "<");
+  }
+
+  const closeDrawer = () =>
+    closeDialog(drawer, drawerPanel, { x: "100%", duration: 0.28 }).then(() => {
+      $$(".cart-undo", listEl).forEach((r) => r.remove());
+      undoState = null;
+    });
   wireDialog(drawer, closeDrawer);
 
   function openCart() {
-    renderCart();
-    showStep("cart");
-    openDialog(drawer, drawerPanel, { x: "100%", opacity: 1 });
+    finishFlights();
+    hideArrival(true);
+    renderList();
+    renderSums();
+    const f = freeF(subtotal());
+    setMeter(drawerMeter, cartMotion() ? lastSeenF : f, { instant: true });
+    showStep("cart", { animate: false, focus: false });
+    openDialog(drawer, drawerPanel, { x: "100%", opacity: 1 }, { duration: 0.48, ease: EASE_DRAWER });
+    if (cartMotion()) {
+      const items = $$(".cart-item", listEl);
+      gsap.fromTo(items.slice(0, 6), { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.38, ease: EASE_OUT, delay: 0.09, stagger: 0.035, clearProps: "transform,opacity" });
+      const block = footEl.hidden ? emptyEl : footEl;
+      gsap.fromTo(block, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.36, ease: EASE_OUT, delay: 0.16, clearProps: "transform,opacity" });
+      if (lastAdded && performance.now() - lastAdded.at < 8000) {
+        const idx = items.findIndex((li) => li.dataset.key === lastAdded.key);
+        if (idx >= 0) {
+          items[idx].classList.add("is-new");
+          gsap.fromTo($("img", items[idx]), { opacity: 0.15, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.6, ease: EASE_OUT, delay: 0.09 + 0.035 * Math.min(idx, 5), clearProps: "transform,opacity" });
+        }
+      }
+      if (Math.abs(f - lastSeenF) > 0.001) setMeter(drawerMeter, f, { dur: 0.6, delay: 0.22 });
+    }
+    lastSeenF = f;
+    lastAdded = null;
   }
   cartBtn.addEventListener("click", openCart);
   $("[data-to-checkout]").addEventListener("click", () => showStep("checkout"));
   $("[data-back]").addEventListener("click", () => showStep("cart"));
 
-  function bumpCount() {
-    if (!motion) return;
-    gsap.fromTo(countEl, { scale: 1 }, { scale: 1.35, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1 });
+  // ---------- Sternspur: der Print fliegt als Stern in den Warenkorb ----------
+  const fxLayer = $("[data-fx]");
+  const flights = new Set();
+  function finishFlights() { Array.from(flights).forEach((tl) => tl.progress(1)); }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) finishFlights(); });
+  let lastVw = window.innerWidth;
+  window.addEventListener("resize", () => {
+    if (window.innerWidth !== lastVw) { lastVw = window.innerWidth; finishFlights(); }
+  });
+
+  // Kreisbogen von A nach B gegen den Uhrzeigersinn, wie die Sterne im Hero um den Pol
+  function arcPath(A, B, deg) {
+    const dx = B.x - A.x;
+    const dy = B.y - A.y;
+    if (!deg) {
+      const t = (Math.atan2(dy, dx) * 180) / Math.PI;
+      return (p) => ({ x: A.x + dx * p, y: A.y + dy * p, tan: t });
+    }
+    const th = (deg * Math.PI) / 180;
+    const L = Math.hypot(dx, dy);
+    const R = L / (2 * Math.sin(th / 2));
+    const h = R * Math.cos(th / 2);
+    const C = { x: (A.x + B.x) / 2 + (dy / L) * h, y: (A.y + B.y) / 2 - (dx / L) * h };
+    const a0 = Math.atan2(A.y - C.y, A.x - C.x);
+    return (p) => {
+      const a = a0 - th * p;
+      return { x: C.x + R * Math.cos(a), y: C.y + R * Math.sin(a), tan: (a * 180) / Math.PI - 90 };
+    };
   }
 
-  // Thumbnail fliegt vom Bild in den Warenkorb
-  function flyToCart(fromRect, src) {
-    if (!motion || !fromRect.width) return bumpCount();
-    const to = cartBtn.getBoundingClientRect();
-    const fly = document.createElement("figure");
-    fly.className = "fly";
-    fly.innerHTML = `<img src="${src}" alt="">`;
-    Object.assign(fly.style, { left: `${fromRect.left}px`, top: `${fromRect.top}px`, width: `${fromRect.width}px`, height: `${fromRect.height}px` });
-    document.body.appendChild(fly);
-    const dx = to.left + to.width / 2 - (fromRect.left + fromRect.width / 2);
-    const dy = to.top + to.height / 2 - (fromRect.top + fromRect.height / 2);
-    const s = Math.max(0.06, 40 / Math.max(fromRect.width, fromRect.height));
-    gsap.timeline({ onComplete: () => { fly.remove(); bumpCount(); } })
-      .to(fly, { x: dx, duration: 0.7, ease: "power2.inOut" }, 0)
-      .to(fly, { y: dy, duration: 0.7, ease: "back.in(1.2)" }, 0)
-      .to(fly, { scale: s, rotation: -6, duration: 0.7, ease: "power3.in" }, 0)
-      .to(fly, { opacity: 0, duration: 0.12 }, 0.6);
+  const SEGS = 12;
+  const cl = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+  function launchStar(s) {
+    const r = s.rect;
+    const pad = s.edge ? 3 : 0;
+    const w = r.width + pad * 2;
+    const h = r.height + pad * 2;
+    const A = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const B = s.B;
+    const L = Math.hypot(B.x - A.x, B.y - A.y);
+    const inside = (pt) => pt.x >= 8 && pt.x <= s.W - 8 && pt.y >= 8 && pt.y <= s.H - 8;
+    const fits = (fn) => { for (let k = 0; k <= 8; k++) if (!inside(fn(k / 8))) return false; return true; };
+    let deg = L >= 400 ? 80 : L >= 140 ? 64 : 40;
+    let path = arcPath(A, B, deg);
+    if (!fits(path)) { deg /= 2; path = arcPath(A, B, deg); }
+    if (!fits(path)) path = arcPath(A, B, 0);
+    const sEnd = Math.min(0.5, 28 / Math.max(w, h));
+
+    const paper = document.createElement("div");
+    paper.className = `fx__paper${s.edge ? " has-edge" : ""}`;
+    paper.style.width = `${w}px`;
+    paper.style.height = `${h}px`;
+    paper.innerHTML = `<img src="${img(s.item.id, true)}" alt="">`;
+    const star = document.createElement("div");
+    star.className = "fx__star";
+    const segs = Array.from({ length: SEGS }, () => {
+      const d = document.createElement("div");
+      d.className = "fx__seg";
+      return d;
+    });
+    fxLayer.replaceChildren(paper, star, ...segs);
+    if (canPop) {
+      try {
+        if (fxLayer.matches(":popover-open")) fxLayer.hidePopover();
+        fxLayer.showPopover();
+      } catch (_) { fxLayer.classList.add("is-on"); }
+    } else fxLayer.classList.add("is-on");
+
+    const sineIn = gsap.parseEase("sine.in");
+    const p2in = gsap.parseEase("power2.in");
+    const p2out = gsap.parseEase("power2.out");
+    const back2 = gsap.parseEase("back.out(2)");
+    const expoOut = gsap.parseEase("expo.out");
+    const P = new Array(SEGS + 1);
+
+    function frame(m) {
+      for (let j = 0; j <= SEGS; j++) P[j] = path(sineIn(cl((m - 120 - j * 14) / 680)));
+      // Print: abheben, dann auf der Bahn schrumpfen
+      const k = p2out(cl(m / 160));
+      const q = p2in(cl((m - 120) / 420));
+      const s0 = 1 + 0.035 * k;
+      const sc = s0 + (sEnd - s0) * q;
+      const tilt = Math.max(-14, Math.min(6, 0.25 * P[0].tan)) * cl((m - 120) / 200);
+      const yOff = s.fromButton ? 12 * (1 - k) : -6 * k * (1 - cl((m - 120) / 420));
+      paper.style.transform = `translate3d(${P[0].x - w / 2}px,${P[0].y - h / 2 + yOff}px,0) rotate(${tilt}deg) scale(${sc})`;
+      paper.style.opacity = (s.fromButton ? k : 1) * (m < 400 ? 1 : 1 - cl((m - 400) / 140));
+      paper.style.setProperty("--lift", k);
+      // Stern: entsteht aus dem Print, verglüht im Zähler
+      const a = cl((m - 390) / 140);
+      const b = expoOut(cl((m - 800) / 160));
+      star.style.transform = `translate3d(${P[0].x - 12}px,${P[0].y - 12}px,0) scale(${(0.4 + 0.6 * back2(a)) * (1 + 0.8 * b)})`;
+      star.style.opacity = a * (1 - b);
+      // Sternspur aus kurzen Strichen mit kleinen Lücken, wie eine gestapelte Belichtung
+      for (let i = 0; i < SEGS; i++) {
+        const p0 = P[i + 1];
+        const p1 = P[i];
+        const len = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+        const ang = (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180) / Math.PI;
+        const vis = cl((m - (i + 1) * 14 - 390) / 140) * (m - 120 - (i + 1) * 14 >= 680 ? 0 : 1);
+        segs[i].style.transform = `translate3d(${p0.x}px,${p0.y - 0.75}px,0) rotate(${ang}deg) scaleX(${(len * 0.9) / 10})`;
+        segs[i].style.opacity = 0.8 * Math.pow(1 - i / SEGS, 1.5) * vis;
+      }
+    }
+
+    const clock = { m: 0 };
+    const tl = gsap.timeline({
+      onComplete: () => {
+        flights.delete(tl);
+        fxLayer.replaceChildren();
+        if (!flights.size) {
+          fxLayer.classList.remove("is-on");
+          if (canPop) try { fxLayer.hidePopover(); } catch (_) { /* schon zu */ }
+        }
+      },
+    });
+    tl.to(clock, { m: 968, duration: 0.968, ease: "none", onUpdate: () => frame(clock.m) }, 0).call(arrive, [s], 0.8);
+    frame(0);
+    flights.add(tl);
+    return tl;
+  }
+
+  // Ankunft: Licht im Zähler, Ziffer rollt, Ring wächst, Karte erscheint
+  function arrive(s) {
+    renderBadge({ animate: true, dir: 1, n: s.nAfter, sub: s.subAfter });
+    setCartLabel();
+    announce(`${s.title}, ${s.optsText} liegt im Warenkorb. ${freeText(s.subAfter)}`);
+    if (cartMotion()) {
+      gsap.timeline()
+        .fromTo(glowEl, { opacity: 0, scale: 0.5 }, { opacity: 0.6, duration: 0.06, ease: "power2.out" }, 0)
+        .to(glowEl, { opacity: 0, duration: 0.3, ease: "power2.out" }, 0.06)
+        .to(glowEl, { scale: 1.2, duration: 0.36, ease: "expo.out" }, 0)
+        .to(countEl, { scaleX: 1.1, scaleY: 0.88, y: -1, duration: 0.07, ease: "power2.out" }, 0)
+        .to(countEl, { scaleX: 1, scaleY: 1, y: 0, duration: 0.28, ease: "back.out(2)" }, 0.07);
+    } else if (gsap) {
+      gsap.timeline().set(glowEl, { scale: 1 }).to(glowEl, { opacity: 0.5, duration: 0.2, ease: "none" }).to(glowEl, { opacity: 0, duration: 0.2, ease: "none" });
+    }
+    const party = s.crossed && !celebrated;
+    showArrival(s, party);
+    if (party) {
+      celebrated = true;
+      if (cartMotion()) gsap.fromTo(echoEl, { scale: 1, opacity: 0.7 }, { scale: 1.5, opacity: 0, duration: 0.22, ease: "expo.out", delay: 0.16 });
+    }
+    lastAdded = { key: s.key, at: performance.now() };
+    lastSeenF = cartMotion() ? lastSeenF : s.fAfter;
+  }
+
+  // ---------- Ankunftskarte ----------
+  const arrivalEl = $("[data-arrival]");
+  const arrivalBody = $("[data-arrival-body]");
+  const arrivalMeter = $("[data-arrival-meter]");
+  const arrivalShip = $("[data-arrival-ship]");
+  let arrivalTimer = 0;
+  let arrivalY = 0;
+  const shipLabel = (sub) => (sub >= FREE ? "Versand kostenlos" : `Noch ${money2(FREE - sub)} bis Gratisversand`);
+
+  function setShipLabel(sub) {
+    arrivalShip.textContent = shipLabel(sub);
+    arrivalShip.classList.toggle("is-free", sub >= FREE);
+  }
+  function onArrivalScroll() { if (Math.abs(window.scrollY - arrivalY) > 48) hideArrival(); }
+
+  function showArrival(s, party) {
+    const p = printById(s.item.id);
+    const anim = cartMotion();
+    $("[data-arrival-img]").src = img(p.id, true);
+    $("[data-arrival-thumb]").classList.toggle("is-landscape", p.orientation === "landscape");
+    $("[data-arrival-title]").textContent = p.title;
+    $("[data-arrival-opts]").textContent = `${s.optsText} · ${money2(s.price)}`;
+    setShipLabel(party && anim ? s.subBefore : s.subAfter);
+
+    const r = s.btnRect;
+    arrivalEl.style.top = `${Math.round(r.bottom + 8)}px`;
+    arrivalEl.style.right = window.innerWidth >= 760 ? `${Math.round(window.innerWidth - r.right)}px` : "";
+    clearTimeout(arrivalTimer);
+    const wasVisible = !arrivalEl.hidden;
+    arrivalEl.hidden = false;
+    if (gsap) {
+      if (wasVisible) {
+        gsap.fromTo(arrivalBody, { opacity: 0 }, { opacity: 1, duration: 0.16, overwrite: true });
+        gsap.set(arrivalEl, { opacity: 1, y: 0, scale: 1, overwrite: true });
+      } else if (anim) {
+        const box = arrivalEl.getBoundingClientRect();
+        gsap.fromTo(arrivalEl, { opacity: 0, y: -8, scale: 0.98, transformOrigin: `${s.B.x - box.left}px 0px` }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: EASE_OUT, overwrite: true });
+      } else {
+        gsap.fromTo(arrivalEl, { opacity: 0 }, { opacity: 1, duration: 0.15, overwrite: true });
+      }
+    }
+    setMeter(arrivalMeter, anim ? s.fBefore : s.fAfter, { instant: true });
+    if (anim) setMeter(arrivalMeter, s.fAfter, { dur: 0.3, ease: "power3.out", delay: 0.06 });
+    if (party && anim) {
+      gsap.timeline({ delay: 0.16 })
+        .to(arrivalShip, { opacity: 0, y: -6, duration: 0.1, ease: "power2.in" })
+        .add(() => setShipLabel(s.subAfter))
+        .fromTo(arrivalShip, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.18, ease: EASE_OUT });
+    }
+    arrivalTimer = setTimeout(hideArrival, anim ? 3280 : 4150);
+    arrivalY = window.scrollY;
+    window.addEventListener("scroll", onArrivalScroll, { passive: true });
+  }
+
+  function hideArrival(fast) {
+    clearTimeout(arrivalTimer);
+    window.removeEventListener("scroll", onArrivalScroll);
+    if (arrivalEl.hidden) return;
+    const done = () => { arrivalEl.hidden = true; };
+    if (!gsap || fast === true) {
+      if (gsap) gsap.set(arrivalEl, { opacity: 0, overwrite: true });
+      return done();
+    }
+    gsap.to(arrivalEl, cartMotion()
+      ? { opacity: 0, y: -4, duration: 0.2, ease: "power2.in", overwrite: true, onComplete: done }
+      : { opacity: 0, duration: 0.15, overwrite: true, onComplete: done });
+  }
+
+  // Sichtbarer Anteil des Motivs im Dialog (auf dem Handy oft weggescrollt)
+  function visibleShare(rect, panel, W, H) {
+    if (!rect.width || !rect.height) return 0;
+    const x0 = Math.max(rect.left, panel.left, 0);
+    const y0 = Math.max(rect.top, panel.top, 0);
+    const x1 = Math.min(rect.left + rect.width, panel.right, W);
+    const y1 = Math.min(rect.top + rect.height, panel.bottom, H);
+    return Math.max(0, x1 - x0) * Math.max(0, y1 - y0) / (rect.width * rect.height);
   }
 
   function visibleImageRect() {
     const wall = !$('[data-pane="wand"]', sheet).hidden;
     if (wall) return roomPoster.getBoundingClientRect();
     const r = productImg.getBoundingClientRect();
+    const cs = getComputedStyle(productImg);
+    const left = r.left + parseFloat(cs.paddingLeft);
+    const top = r.top + parseFloat(cs.paddingTop);
+    const bw = r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const bh = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     const ratio = sel.print.orientation === "landscape" ? 1.5 : 2 / 3;
-    let w = r.width, h = r.height;
+    let w = bw;
+    let h = bh;
     if (w / h > ratio) w = h * ratio; else h = w / ratio;
-    return { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h };
+    return { left: left + (bw - w) / 2, top: top + (bh - h) / 2, width: w, height: h };
   }
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    if (sheetClosing) return;
     const p = sel.print;
-    const existing = cart.find((i) => i.id === p.id && i.size === sel.size && i.material === sel.material);
-    if (existing) existing.qty = Math.min(20, existing.qty + 1);
-    else cart.push({ id: p.id, size: sel.size, material: sel.material, qty: 1 });
+    const nBefore = count();
+    const subBefore = subtotal();
+    const it = { id: p.id, size: sel.size, material: sel.material };
+    const existing = cart.find((i) => itemKey(i) === itemKey(it));
+    if (existing) existing.qty = Math.min(MAX_QTY, existing.qty + 1);
+    else cart.push(Object.assign({ qty: 1 }, it));
     save();
-    renderCart();
-    const rect = visibleImageRect();
-    closeSheet().then(() => {
-      flyToCart(rect, img(p.id, true));
-      toast(`${p.title} liegt im Warenkorb`);
-    });
+    setCartLabel();
+
+    // Ein Lese-Block vor allen Schreibzugriffen
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const wall = !$('[data-pane="wand"]', sheet).hidden;
+    let rect = visibleImageRect();
+    const panelRect = sheetPanel.getBoundingClientRect();
+    const countRect = countEl.getBoundingClientRect();
+    const btnRect = cartBtn.getBoundingClientRect();
+    const addRect = $("[data-add]", form).getBoundingClientRect();
+    const subAfter = subtotal();
+    const s = {
+      item: it,
+      key: itemKey(it),
+      title: p.title,
+      optsText: `${sizeLabel(sizeById(sel.size), p.orientation)} · ${materialById(sel.material).label}`,
+      price: priceOf(sel.size, sel.material),
+      nBefore,
+      nAfter: count(),
+      subBefore,
+      subAfter,
+      fBefore: freeF(subBefore),
+      fAfter: freeF(subAfter),
+      B: { x: countRect.left + countRect.width / 2, y: countRect.top + countRect.height / 2 },
+      btnRect,
+      W,
+      H,
+      edge: sel.material === "papier" && !wall,
+      fromButton: false,
+    };
+    s.crossed = s.fBefore < 1 && s.fAfter >= 1;
+
+    // Motiv weggescrollt? Dann startet ein kleiner Print direkt über dem Button
+    if (visibleShare(rect, panelRect, W, H) < 0.5) {
+      const land = p.orientation === "landscape";
+      const rw = land ? 72 : 48;
+      const rh = land ? 48 : 72;
+      rect = { left: addRect.left + addRect.width / 2 - rw / 2, top: addRect.top - 8 - rh, width: rw, height: rh };
+      s.fromButton = true;
+    }
+    s.rect = rect;
+
+    finishFlights();
+    if (!cartMotion()) {
+      closeSheet().then(() => arrive(s));
+      return;
+    }
+    if (canPop) {
+      launchStar(s);
+      closeSheet({ to: { duration: 0.2, ease: "power2.out" } });
+    } else {
+      closeSheet().then(() => launchStar(s).seek(0.12));
+    }
   });
 
   // ---------- Bestellanfrage ----------
@@ -698,7 +1307,12 @@
     }
     cart = [];
     save();
-    renderCart();
+    renderList();
+    renderSums();
+    renderBadge();
+    setCartLabel();
+    setMeter(drawerMeter, 0, { instant: true });
+    lastSeenF = 0;
     checkout.reset();
     showStep("done");
   }
@@ -718,7 +1332,14 @@
     } else fallback();
   });
 
-  renderCart();
+  renderList();
+  renderSums();
+  renderBadge();
+  setCartLabel();
+  setMeter(drawerMeter, lastSeenF, { instant: true });
+  if (typeof toastEl.showPopover === "function") {
+    try { toastEl.showPopover(); } catch (_) { /* egal */ }
+  }
 
   // ---------- Navigation ----------
   const nav = $("[data-nav]");
