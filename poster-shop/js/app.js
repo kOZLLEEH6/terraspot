@@ -266,17 +266,20 @@
       sheetClosing = null;
       $("[data-sheet-status]").textContent = "";
       setZoom(false);
-      focusTile(p);
+      focusTile(p, opts.scrollToTile !== false);
     });
     return sheetClosing;
   }
   wireDialog(sheet, () => closeSheet());
 
   // Nach dem Schließen landet der Fokus auf der Kachel des zuletzt angesehenen Prints
-  function focusTile(p) {
+  // Nach dem Hinzufügen nicht scrollen: Ein Seitensprung unter dem fliegenden Stern
+  // wirkt unruhig und würde die Ankunftskarte sofort wieder schließen.
+  function focusTile(p, scroll = true) {
     const hit = p && grid.querySelector(`[data-open-print="${p.id}"]`);
     if (!hit || hit.closest(".tile").classList.contains("is-out")) return;
     hit.focus({ preventScroll: true });
+    if (!scroll) return;
     const r = hit.getBoundingClientRect();
     if (r.bottom < 0 || r.top > window.innerHeight) hit.scrollIntoView({ block: "center" });
   }
@@ -1101,7 +1104,7 @@
     showArrival(s, party);
     if (party) {
       celebrated = true;
-      if (cartMotion()) gsap.fromTo(echoEl, { scale: 1, opacity: 0.7 }, { scale: 1.5, opacity: 0, duration: 0.22, ease: "expo.out", delay: 0.16 });
+      if (cartMotion()) gsap.fromTo(echoEl, { scale: 1, opacity: 0.7, transformOrigin: "50% 50%" }, { scale: 1.5, opacity: 0, duration: 0.22, ease: "expo.out", delay: 0.16 });
     }
     lastAdded = { key: s.key, at: performance.now() };
     lastSeenF = cartMotion() ? lastSeenF : s.fAfter;
@@ -1133,7 +1136,6 @@
 
     const r = s.btnRect;
     arrivalEl.style.top = `${Math.round(r.bottom + 8)}px`;
-    arrivalEl.style.right = window.innerWidth >= 760 ? `${Math.round(window.innerWidth - r.right)}px` : "";
     clearTimeout(arrivalTimer);
     const wasVisible = !arrivalEl.hidden;
     arrivalEl.hidden = false;
@@ -1257,14 +1259,14 @@
 
     finishFlights();
     if (!cartMotion()) {
-      closeSheet().then(() => arrive(s));
+      closeSheet({ scrollToTile: false }).then(() => arrive(s));
       return;
     }
     if (canPop) {
       launchStar(s);
-      closeSheet({ to: { duration: 0.2, ease: "power2.out" } });
+      closeSheet({ to: { duration: 0.2, ease: "power2.out" }, scrollToTile: false });
     } else {
-      closeSheet().then(() => launchStar(s).seek(0.12));
+      closeSheet({ scrollToTile: false }).then(() => launchStar(s).seek(0.12));
     }
   });
 

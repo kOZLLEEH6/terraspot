@@ -314,7 +314,7 @@ a.nav__cart { padding-right: 16px; }
 .nav__cart.has-items .nav__ring { opacity: 1; }
 .nav__ring-track { stroke: var(--line); stroke-width: 1; transition: stroke 200ms ease; }
 .nav__ring-arc { stroke: var(--k-star); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
-.nav__ring-echo { stroke: var(--k-star); stroke-width: 1; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.nav__ring-echo { stroke: var(--k-star); stroke-width: 1; opacity: 0; }
 @media (hover: hover) { .nav__cart:hover .nav__ring-track { stroke: var(--dust); } }
 .nav__digits {
   position: relative;
