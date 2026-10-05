@@ -104,4 +104,9 @@ Das ist kein Rechtsrat, aber diese Punkte solltest du geklärt haben:
 - Wer im Betriebssystem „Bewegung reduzieren“ eingestellt hat, bekommt eine ruhige Version
   ohne Scroll-Effekte.
 - Der Warenkorb liegt im `localStorage` des Browsers, es gibt keine Cookies.
-- Einzelne Prints lassen sich verlinken: `index.html#print-m42-orionnebel`.
+- Jeder geöffnete Print hat einen eigenen Link (z. B. `index.html#print-m42-orionnebel`), den man
+  teilen kann. Die Zurück-Taste am Handy schließt die Detailansicht.
+- In der Detailansicht blättert man mit Pfeiltasten, Wischen oder den Pfeilen unten rechts.
+  Ein Klick aufs Bild zoomt in die volle Auflösung (Maus bewegen bzw. Finger ziehen zum Verschieben).
+- `og:image` in `index.html` braucht für Vorschaubilder in WhatsApp & Co. die volle Adresse,
+  sobald du eine Domain hast.

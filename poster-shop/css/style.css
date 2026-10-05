@@ -473,6 +473,8 @@ a.nav__cart { padding-right: 16px; }
   background: #05070c;
 }
 .tile__poster.is-landscape img { aspect-ratio: 3 / 2; }
+.has-motion .tile__poster img { opacity: 0; transition: opacity 700ms ease; }
+.has-motion .tile__poster img.is-loaded { opacity: 1; }
 
 .mount-caption {
   position: absolute;
@@ -633,6 +635,7 @@ a.nav__cart { padding-right: 16px; }
 .wall__points dd { margin: 4px 0 0; color: var(--haze); }
 
 @media (max-width: 860px) {
+  .wall { height: 250svh; }
   .wall__stage {
     --cm: min(0.2svh, 0.44vw);
     --floor: 60%;
@@ -846,6 +849,7 @@ html.is-locked { overflow: hidden; }
   height: calc(100svh - 34px);
   min-height: 460px;
   background: #05070c;
+  touch-action: pan-y;
 }
 .tabs {
   position: absolute;
@@ -872,18 +876,61 @@ html.is-locked { overflow: hidden; }
 }
 .tabs button[aria-selected="true"] { background: var(--star); color: var(--ink); }
 
-.product__pane { display: grid; place-items: center; padding: 64px 24px 24px; }
+.product__pane { display: grid; min-height: 0; }
+
+.zoom {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: hidden;
+  cursor: zoom-in;
+  touch-action: pan-y;
+}
+.zoom.is-zoomed { cursor: zoom-out; touch-action: none; }
+.zoom:focus-visible { outline-offset: -4px; }
 .product__img {
   width: 100%;
   height: 100%;
-  max-height: min(72svh, 720px);
+  padding: 64px 24px 72px;
   object-fit: contain;
+  transform-origin: var(--zx, 50%) var(--zy, 50%);
+  transition: transform 520ms var(--ease-out);
+}
+.zoom.is-zoomed .product__img { transform: scale(var(--zs, 2.4)); }
+
+.pager {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(7 10 18 / 0.7);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.pager .icon-btn { width: 36px; height: 36px; border: 0; background: transparent; }
+.pager__count {
+  min-width: 4.5ch;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--haze);
 }
 
 /* Raumansicht: der 4:3-Ausschnitt unten steht für 360 × 270 cm Wand */
 .room {
   position: relative;
-  padding: 0;
+  padding: 0 0 58px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -891,7 +938,7 @@ html.is-locked { overflow: hidden; }
   overflow: hidden;
   background:
     radial-gradient(60% 50% at 50% 30%, rgb(255 236 214 / 0.07), transparent 70%),
-    #1a2131;
+    linear-gradient(#1a2131 calc(100% - 58px), #0d1019 0);
 }
 .room__wall {
   position: relative;
@@ -933,7 +980,7 @@ html.is-locked { overflow: hidden; }
 .room__scale {
   position: absolute;
   left: 16px;
-  bottom: 10px;
+  bottom: -38px;
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -1050,11 +1097,10 @@ html.is-locked { overflow: hidden; }
 @media (max-width: 860px) {
   .product { grid-template-columns: 1fr; }
   .product__view { position: relative; height: auto; min-height: 0; }
+  .zoom { height: min(58svh, 560px); }
+  .product__img { padding: 56px 12px 60px; }
   .room { min-height: 0; }
   .room__wall { margin-top: 56px; }
-  .product__pane { padding: 60px 12px 12px; }
-  .product__img { max-height: 52svh; }
-  .room { padding: 60px 0 0; }
 }
 @media (max-width: 420px) {
   .opts__sizes { grid-template-columns: repeat(2, minmax(0, 1fr)); }

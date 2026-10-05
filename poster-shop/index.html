@@ -9,6 +9,9 @@
   <meta property="og:title" content="Lichtjahr · Astrofotografie als Poster">
   <meta property="og:description" content="Nebel, Galaxien und Sternspuren, selbst fotografiert und als Poster gedruckt.">
   <meta property="og:image" content="img/prints/m42-orionnebel-sm.jpg">
+  <!-- og:image braucht später die volle Adresse, z. B. https://deine-domain.de/img/prints/m42-orionnebel-sm.jpg -->
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preload" href="fonts/jost.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
@@ -206,7 +209,9 @@
             <button type="button" role="tab" id="tab-wand" aria-selected="false" aria-controls="view-wand" data-tab="wand">An der Wand</button>
           </div>
           <div class="product__pane" id="view-motiv" role="tabpanel" aria-labelledby="tab-motiv" data-pane="motiv">
-            <img class="product__img" data-product-img alt="">
+            <button class="zoom" type="button" data-zoom aria-pressed="false" aria-label="Bild vergrößern">
+              <img class="product__img" data-product-img alt="">
+            </button>
           </div>
           <div class="product__pane room" id="view-wand" role="tabpanel" aria-labelledby="tab-wand" data-pane="wand" hidden>
             <div class="room__wall">
@@ -218,8 +223,17 @@
                 <path d="M200 92v20"/>
                 <path d="M34 134v10M366 134v10"/>
               </svg>
-              <p class="room__scale">Sofa zum Vergleich: 200 cm breit</p>
+              <p class="room__scale">Sofa: 200 cm breit</p>
             </div>
+          </div>
+          <div class="pager">
+            <button class="icon-btn" type="button" data-step-print="-1" aria-label="Vorheriger Print">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+            <span class="pager__count" data-pager-count aria-live="polite"></span>
+            <button class="icon-btn" type="button" data-step-print="1" aria-label="Nächster Print">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
           </div>
         </div>
         <form class="product__info" data-product-form>

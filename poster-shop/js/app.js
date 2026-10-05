@@ -83,6 +83,18 @@
     })
     .join("");
 
+  // Vorschaubilder blenden sanft ein, sobald sie geladen sind
+  if (motion) {
+    $$(".tile__poster img", grid).forEach((im) => {
+      const show = () => im.classList.add("is-loaded");
+      if (im.complete && im.naturalWidth) show();
+      else {
+        im.addEventListener("load", show, { once: true });
+        im.addEventListener("error", show, { once: true });
+      }
+    });
+  }
+
   // Filter
   const filters = $("[data-filters]");
   const counts = SHOP.prints.reduce((acc, p) => ((acc[p.category] = (acc[p.category] || 0) + 1), acc), {});
@@ -189,13 +201,55 @@
   const sheet = $("[data-product]");
   const sheetPanel = $(".sheet__panel", sheet);
   const form = $("[data-product-form]");
+  const view = $(".product__view", sheet);
   const productImg = $("[data-product-img]");
+  const zoomBtn = $("[data-zoom]");
   const roomPoster = $("[data-room-poster]");
   const roomImg = $("[data-room-img]");
   const sel = { print: null, size: "40x60", material: "papier" };
 
-  const closeSheet = () => closeDialog(sheet, sheetPanel, { opacity: 0, y: 12, scale: 0.985 });
-  wireDialog(sheet, closeSheet);
+  // Verlauf: Jeder geöffnete Print bekommt einen eigenen Link (#print-…),
+  // die Zurück-Taste am Handy schließt dann die Detailansicht statt die Seite.
+  const HKEY = "lichtjahrPrint";
+  let pushedState = false;
+  let ignorePop = false;
+  const safely = (fn) => { try { fn(); } catch (_) { /* z. B. in einer Sandbox ohne History-API */ } };
+  const printUrl = (id) => `${location.pathname}${location.search}#print-${id}`;
+  function pushPrintState(id) { safely(() => { history.pushState({ [HKEY]: id }, "", printUrl(id)); pushedState = true; }); }
+  function replacePrintState(id) { safely(() => history.replaceState({ [HKEY]: id }, "", printUrl(id))); }
+  function leavePrintState() {
+    if (pushedState) {
+      pushedState = false;
+      ignorePop = true;
+      safely(() => history.back());
+    } else if (location.hash.startsWith("#print-")) {
+      safely(() => history.replaceState(null, "", location.pathname + location.search));
+    }
+  }
+
+  let sheetClosing = null;
+  function closeSheet(opts = {}) {
+    if (sheetClosing) return sheetClosing;
+    if (!sheet.open) return Promise.resolve();
+    if (!opts.fromHistory) leavePrintState();
+    const p = sel.print;
+    sheetClosing = closeDialog(sheet, sheetPanel, { opacity: 0, y: 12, scale: 0.985 }).then(() => {
+      sheetClosing = null;
+      setZoom(false);
+      focusTile(p);
+    });
+    return sheetClosing;
+  }
+  wireDialog(sheet, () => closeSheet());
+
+  // Nach dem Schließen landet der Fokus auf der Kachel des zuletzt angesehenen Prints
+  function focusTile(p) {
+    const hit = p && grid.querySelector(`[data-open-print="${p.id}"]`);
+    if (!hit || hit.closest(".tile").classList.contains("is-out")) return;
+    hit.focus({ preventScroll: true });
+    const r = hit.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) hit.scrollIntoView({ block: "center" });
+  }
 
   function setTab(name) {
     $$("[data-tab]", sheet).forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
@@ -204,6 +258,7 @@
       p.hidden = !on;
       if (on && motion) gsap.fromTo(p, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" });
     });
+    if (name !== "motiv") setZoom(false);
   }
   $(".tabs", sheet).addEventListener("click", (e) => {
     const t = e.target.closest("[data-tab]");
@@ -211,6 +266,7 @@
   });
   $(".tabs", sheet).addEventListener("keydown", (e) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.stopPropagation();
     const tabs = $$("[data-tab]", sheet);
     const i = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
     const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
@@ -251,11 +307,13 @@
     updateProduct();
   });
 
-  let lastOpener = null;
-  function openPrint(id, opener) {
-    const p = printById(id);
-    if (!p) return;
-    lastOpener = opener || null;
+  // Blättern bezieht sich auf die gerade gefilterten Prints
+  function browseList() {
+    const list = SHOP.prints.filter((p) => currentFilter === "alle" || p.category === currentFilter);
+    return sel.print && !list.includes(sel.print) ? SHOP.prints : list;
+  }
+
+  function fillPrint(p) {
     sel.print = p;
     $("[data-product-eyebrow]").textContent = `${p.catalog} · ${categoryLabel(p.category)}`;
     $("[data-product-title]").textContent = p.title;
@@ -263,7 +321,9 @@
     $("[data-product-text]").textContent = p.text;
     $("[data-product-specs]").innerHTML = p.data.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
 
+    setZoom(false);
     productImg.alt = `${p.title} (${p.catalog}), ${p.coords}`;
+    zoomBtn.setAttribute("aria-label", `${p.title} vergrößern`);
     productImg.src = img(p.id, true);
     const full = new Image();
     full.onload = () => { if (sel.print === p) productImg.src = full.src; };
@@ -273,14 +333,142 @@
 
     renderOptions();
     updateProduct();
+    const list = browseList();
+    $("[data-pager-count]").textContent = `${list.indexOf(p) + 1} / ${list.length}`;
+    $$("[data-step-print]", sheet).forEach((b) => (b.disabled = list.length < 2));
+  }
+
+  function openPrint(id, opts = {}) {
+    const p = printById(id);
+    if (!p) return;
+    fillPrint(p);
     setTab("motiv");
     sheetPanel.scrollTop = 0;
+    if (opts.history === "push") pushPrintState(p.id);
+    if (opts.history === "replace") replacePrintState(p.id);
     openDialog(sheet, sheetPanel, { opacity: 0, y: 28, scale: 0.985 });
   }
 
+  function stepPrint(dir) {
+    const list = browseList();
+    if (list.length < 2) return;
+    const i = Math.max(0, list.indexOf(sel.print));
+    const next = list[(i + dir + list.length) % list.length];
+    fillPrint(next);
+    replacePrintState(next.id);
+    if (!motion) return;
+    gsap.fromTo([productImg, roomImg], { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" });
+    gsap.fromTo(
+      $$("[data-product-eyebrow], [data-product-title], [data-product-light], [data-product-text], [data-product-specs]", sheet),
+      { opacity: 0, x: 14 * dir },
+      { opacity: 1, x: 0, duration: 0.42, stagger: 0.025, ease: "power3.out", clearProps: "transform" }
+    );
+  }
+
+  sheet.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-step-print]");
+    if (b) stepPrint(+b.dataset.stepPrint);
+  });
+  sheet.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && zoomed) {
+      e.preventDefault();
+      setZoom(false);
+      return;
+    }
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    if (e.target.closest("input, select, textarea")) return;
+    e.preventDefault();
+    stepPrint(e.key === "ArrowRight" ? 1 : -1);
+  });
+
+  // Wischen auf dem Bild blättert weiter (nur Touch, nicht im Zoom)
+  let swipe = null;
+  view.addEventListener("pointerdown", (e) => {
+    swipe = e.pointerType !== "mouse" && !zoomed ? { x: e.clientX, y: e.clientY } : null;
+  });
+  view.addEventListener("pointerup", (e) => {
+    if (!swipe || zoomed) return (swipe = null);
+    const dx = e.clientX - swipe.x;
+    const dy = e.clientY - swipe.y;
+    swipe = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) stepPrint(dx < 0 ? 1 : -1);
+  });
+  view.addEventListener("pointercancel", () => (swipe = null));
+
+  // ---------- Zoom in die volle Auflösung ----------
+  let zoomed = false;
+  let drag = null;
+  const clamp = (n) => Math.min(100, Math.max(0, n));
+
+  function zoomScale() {
+    const box = zoomBtn.getBoundingClientRect();
+    const cs = getComputedStyle(productImg);
+    const bw = box.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const bh = box.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const ratio = sel.print.orientation === "landscape" ? 1.5 : 2 / 3;
+    const shown = Math.min(bw, bh * ratio);
+    const natural = productImg.naturalWidth || 2000;
+    return Math.min(3, Math.max(1.8, natural / shown));
+  }
+  function setOrigin(x, y) {
+    productImg.style.setProperty("--zx", `${x}%`);
+    productImg.style.setProperty("--zy", `${y}%`);
+  }
+  function originAt(e) {
+    const r = zoomBtn.getBoundingClientRect();
+    return [clamp(((e.clientX - r.left) / r.width) * 100), clamp(((e.clientY - r.top) / r.height) * 100)];
+  }
+  function setZoom(on, e) {
+    if (on && !sel.print) return;
+    if (on) {
+      productImg.style.setProperty("--zs", zoomScale().toFixed(2));
+      if (e) setOrigin(...originAt(e)); else setOrigin(50, 50);
+    }
+    zoomed = on;
+    zoomBtn.classList.toggle("is-zoomed", on);
+    zoomBtn.setAttribute("aria-pressed", String(on));
+  }
+
+  zoomBtn.addEventListener("pointerdown", (e) => {
+    const zx = parseFloat(productImg.style.getPropertyValue("--zx")) || 50;
+    const zy = parseFloat(productImg.style.getPropertyValue("--zy")) || 50;
+    drag = { x: e.clientX, y: e.clientY, zx, zy, moved: false };
+    if (zoomed && e.pointerType !== "mouse") zoomBtn.setPointerCapture(e.pointerId);
+  });
+  zoomBtn.addEventListener("pointermove", (e) => {
+    if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 8) drag.moved = true;
+    if (!zoomed) return;
+    if (e.pointerType === "mouse") return setOrigin(...originAt(e));
+    if (!drag) return;
+    // Touch: Bild mit dem Finger verschieben
+    const r = zoomBtn.getBoundingClientRect();
+    setOrigin(clamp(drag.zx - ((e.clientX - drag.x) / r.width) * 140), clamp(drag.zy - ((e.clientY - drag.y) / r.height) * 140));
+  });
+  zoomBtn.addEventListener("pointerup", (e) => {
+    const d = drag;
+    drag = null;
+    if (d && d.moved) return;
+    setZoom(!zoomed, e);
+  });
+  zoomBtn.addEventListener("pointercancel", () => (drag = null));
+  zoomBtn.addEventListener("click", (e) => { if (e.detail === 0) setZoom(!zoomed); }); // Enter/Leertaste
+
   grid.addEventListener("click", (e) => {
     const b = e.target.closest("[data-open-print]");
-    if (b) openPrint(b.dataset.openPrint, b);
+    if (b) openPrint(b.dataset.openPrint, { history: "push" });
+  });
+
+  window.addEventListener("popstate", (e) => {
+    if (ignorePop) { ignorePop = false; return; }
+    const fromHash = location.hash.match(/^#print-(.+)$/);
+    const id = (e.state && e.state[HKEY]) || (fromHash && fromHash[1]);
+    if (id && printById(id)) {
+      if (sheet.open) fillPrint(printById(id));
+      else { pushedState = true; openPrint(id); }
+    } else if (sheet.open) {
+      pushedState = false;
+      closeSheet({ fromHistory: true });
+    }
   });
 
   // ---------- Warenkorb ----------
@@ -668,5 +856,5 @@
 
   // Prints per Link öffnen, z. B. index.html#print-m42-orionnebel
   const deep = location.hash.match(/^#print-(.+)$/);
-  if (deep && printById(deep[1])) openPrint(deep[1]);
+  if (deep && printById(deep[1])) openPrint(deep[1], { history: "replace" });
 })();

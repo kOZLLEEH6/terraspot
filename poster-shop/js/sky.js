@@ -22,6 +22,20 @@
   let ridge = null;
   let lastW = 0, lastH = 0;
 
+  // Glanzpunkte einmal vorrendern statt in jedem Frame neue Verläufe zu bauen
+  const sprites = {};
+  for (const c of COLORS) {
+    const sp = document.createElement("canvas");
+    sp.width = sp.height = 32;
+    const g = sp.getContext("2d");
+    const grd = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grd.addColorStop(0, c);
+    grd.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 32, 32);
+    sprites[c] = sp;
+  }
+
   // kleiner deterministischer Zufallsgenerator, damit der Himmel bei jedem Besuch gleich aussieht
   function rng(seed) {
     return function () {
@@ -131,18 +145,13 @@
     }
 
     // helle Sterne bekommen einen kleinen Glanzpunkt am Kopf
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 0.55;
     for (const h of heads) {
       const a0 = h.star.a - spin;
       const x = pole.x + h.star.r * Math.cos(a0);
       const y = pole.y + h.star.r * Math.sin(a0);
       const rad = h.big ? 7 : 4;
-      const grd = ctx.createRadialGradient(x, y, 0, x, y, rad);
-      grd.addColorStop(0, h.color);
-      grd.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = grd;
-      ctx.globalAlpha = 0.55;
-      ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+      ctx.drawImage(sprites[h.color], x - rad, y - rad, rad * 2, rad * 2);
     }
 
     ctx.globalAlpha = 1;
