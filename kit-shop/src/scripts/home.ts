@@ -59,6 +59,19 @@ function initReveals() {
     );
   });
 
+  // Dunkle Abschnitte wachsen beim Reinscrollen aus einer Karte auf volle Breite
+  gsap.utils.toArray<HTMLElement>('[data-expand]').forEach((el) => {
+    gsap.fromTo(
+      el,
+      { clipPath: 'inset(0% 2.5% 0% 2.5% round 32px)' },
+      {
+        clipPath: 'inset(0% 0% 0% 0% round 0px)',
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top bottom', end: 'top 25%', scrub: true },
+      },
+    );
+  });
+
   // Riesiger Schriftzug im Footer steigt Buchstabe für Buchstabe auf
   const word = document.querySelector<HTMLElement>('[data-wordmark]');
   if (word) {

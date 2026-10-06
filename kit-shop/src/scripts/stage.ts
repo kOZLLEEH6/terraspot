@@ -47,7 +47,7 @@ function introText(heroCopy: HTMLElement) {
 
 const STATUS: Record<string, string> = {
   normal: 'schaut dich an',
-  sleep: 'schläft, beweg mal die Maus',
+  sleep: 'schläft, klick ihn an',
   worried: 'wird gerade zerlegt',
   happy: 'freut sich',
   love: 'freut sich riesig',

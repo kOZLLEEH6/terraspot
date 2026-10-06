@@ -140,7 +140,14 @@ function bumpCount() {
 }
 
 export function open() {
-  if (dialog.open) return;
+  if (dialog.open) {
+    // Wird gerade geschlossen: einfach wieder aufziehen
+    if (!dialog.classList.contains('is-open')) {
+      dialog.classList.add('is-open');
+      stopScroll(true);
+    }
+    return;
+  }
   lastFocus = document.activeElement as HTMLElement | null;
   dialog.showModal();
   stopScroll(true);
@@ -152,12 +159,25 @@ export function close() {
   dialog.classList.remove('is-open');
   stopScroll(false);
   const panel = dialog.querySelector<HTMLElement>('[data-cart-panel]')!;
+  let finished = false;
   const done = () => {
+    if (finished) return;
+    finished = true;
+    panel.removeEventListener('transitionend', onEnd);
+    if (dialog.classList.contains('is-open')) return;
     dialog.close();
     lastFocus?.focus?.();
   };
+  // Nur auf das Ende der Schiebe-Animation des Panels hören (nicht auf Kinder),
+  // und zur Sicherheit nach kurzer Zeit trotzdem schließen.
+  const onEnd = (e: TransitionEvent) => {
+    if (e.target === panel && e.propertyName === 'transform') done();
+  };
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) done();
-  else panel.addEventListener('transitionend', done, { once: true });
+  else {
+    panel.addEventListener('transitionend', onEnd);
+    window.setTimeout(done, 600);
+  }
 }
 
 async function checkout() {
