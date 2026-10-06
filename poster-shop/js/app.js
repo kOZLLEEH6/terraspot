@@ -1401,35 +1401,31 @@
   window.addEventListener("scroll", () => { if (!navTick) { navTick = true; requestAnimationFrame(updateNav); } }, { passive: true });
   updateNav();
 
-  // ---------- Hero: Scrollen = Belichtung ----------
+  // ---------- Hero: Scrollen = Parallax-Tiefe ----------
   const Sky = window.Sky;
-  const expoEl = $("[data-exposure]");
-  const rotEl = $("[data-rotation]");
-  const hint = $("[data-hero-hint]");
-  const MAX_EXPOSURE = 1.36; // rad, ~78° bzw. 5 h 12 min
+  const depthEl = $("[data-exposure]");  /* zeigt Tiefe als % */
+  const heroHint = $("[data-hero-hint]");
   const heroState = { intro: 0, scroll: 0 };
 
-  function pad(n) { return String(n).padStart(2, "0"); }
-  function setExposure(rad) {
+  function setDepth(d) {
     if (!Sky) return;
-    Sky.state.exposure = rad;
-    const deg = (rad * 180) / Math.PI;
-    const secs = Math.round((deg / 15) * 3600);
-    expoEl.textContent = `${pad(Math.floor(secs / 3600))}:${pad(Math.floor((secs % 3600) / 60))}:${pad(secs % 60)}`;
-    rotEl.textContent = `${deg.toFixed(1).replace(".", ",")}°`;
+    Sky.state.depth = Math.max(0, Math.min(1, d));
+    depthEl.textContent = Math.round(d * 100) + '%';
     if (!motion) Sky.draw();
   }
+
   function heroUpdate() {
-    const start = 0.004 + 0.09 * heroState.intro;
+    const start = 0 + 0.15 * heroState.intro;  /* intro: 0 bis 0.15 */
     const t = heroState.scroll;
+    /* smooth easing */
     const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    setExposure(start + (MAX_EXPOSURE - start) * eased);
+    setDepth(start + (1 - start) * eased);  /* 0 bis 1 */
   }
 
   if (!motion) {
-    setExposure(MAX_EXPOSURE * 0.75);
+    setDepth(0.7);
   } else {
-    // Auftakt: Verschluss öffnet sich, Text steigt ein
+    /* Auftakt: Sterne rücken näher, Text steigt ein */
     const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
     tl.from(nav, { y: -20, opacity: 0, duration: 0.8 }, 0.1)
       .from(".hero__title .line > span", { yPercent: 110, duration: 1.2, stagger: 0.09 }, 0.15)
@@ -1446,8 +1442,8 @@
     ScrollTrigger.create({
       trigger: "[data-hero]",
       start: "top top-=40",
-      onEnter: () => gsap.to(hint, { opacity: 0, duration: 0.3 }),
-      onLeaveBack: () => gsap.to(hint, { opacity: 1, duration: 0.3 }),
+      onEnter: () => gsap.to(heroHint, { opacity: 0, duration: 0.3 }),
+      onLeaveBack: () => gsap.to(heroHint, { opacity: 1, duration: 0.3 }),
     });
   }
 
