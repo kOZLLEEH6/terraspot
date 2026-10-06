@@ -355,19 +355,59 @@ a.nav__cart { padding-right: 16px; }
   height: 100%;
 }
 
+/* Der Schleier liegt in der Himmelsebene, also hinter den Bergen: er dämpft nur
+   die Spuren hinter dem Text, die Kämme davor behalten ihre Dunststufen. */
 .hero__scrim {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(60% 55% at 18% 78%, rgb(4 6 12 / 0.82), rgb(4 6 12 / 0) 100%),
-    linear-gradient(to top, rgb(4 6 12 / 0.7), rgb(4 6 12 / 0) 45%);
+  background: radial-gradient(54% 40% at 27% 52%, rgb(4 6 12 / 0.86), rgb(4 6 12 / 0.55) 55%, rgb(4 6 12 / 0) 100%);
   pointer-events: none;
 }
+
+/* Landschaft in vier Tiefen. Luftperspektive: je weiter weg, desto heller und blauer. */
+.hero__land {
+  --far: #111a2e;  --far-mist: #18233c;
+  --mid: #0b1222;  --mid-mist: #111a2e;
+  --near: #070b16; --near-mist: #0b1222;
+  --fore: #030409;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Übergang in den Seitengrund, bleibt stehen */
+.hero__land::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 10%;
+  background: linear-gradient(rgb(7 10 18 / 0), var(--night));
+}
+.hero__layer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: block;
+  width: 100%;
+  height: 50%;
+}
+.has-motion .hero__layer { will-change: transform; }
+.hero__layer--far  { --top: var(--far);  --mist: var(--far-mist); }
+.hero__layer--mid  { --top: var(--mid);  --mist: var(--mid-mist); }
+.hero__layer--near { --top: var(--near); --mist: var(--near-mist); }
+.hero__layer stop:first-child { stop-color: var(--top); }
+.hero__layer stop:last-child { stop-color: var(--mist); }
+.hero__ground,
+.hero__cam path { fill: var(--fore); }
+.hero__cam .hero__legs { fill: none; stroke: var(--fore); stroke-linecap: round; }
+.hero__led { fill: var(--k-star); }
 .hero__copy {
   position: absolute;
   inset: auto 0 0 0;
   padding-bottom: clamp(36px, 9svh, 104px);
 }
+/* Kleine Schrift liegt am Ende über dichten Spuren: ein ruhiger Hof statt dunklerem Himmel */
+.hero__copy .eyebrow,
+.hero__lede { text-shadow: 0 0 14px rgb(4 6 12 / 0.9), 0 0 3px rgb(4 6 12 / 0.6); }
 .hero__title {
   margin: 0;
   font-family: var(--font-display);
@@ -433,6 +473,12 @@ a.nav__cart { padding-right: 16px; }
 .hero__readout span { color: var(--dust); text-transform: uppercase; letter-spacing: 0.1em; }
 .hero__readout b { font-weight: 500; color: var(--star); }
 .hero__readout [data-exposure] { color: var(--k-star); }
+
+@media (max-width: 760px) {
+  .hero__scrim {
+    background: radial-gradient(100% 30% at 30% 55%, rgb(4 6 12 / 0.9), rgb(4 6 12 / 0.6) 55%, rgb(4 6 12 / 0) 100%);
+  }
+}
 
 @media (max-width: 900px) {
   .hero__readout {

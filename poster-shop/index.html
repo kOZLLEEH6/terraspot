@@ -46,11 +46,35 @@
   </header>
 
   <main id="top">
-    <!-- Hero: Scrollen verlängert die Belichtung, die Sternspuren wachsen -->
+    <!-- Hero: Scrollen verlängert die Belichtung, die Sternspuren wachsen.
+         Dabei fährt der Blick wie auf einem Kran nach oben: nahe Ebenen sinken schneller als ferne. -->
     <section class="hero" data-hero aria-labelledby="hero-title">
       <div class="hero__stage">
         <canvas class="hero__sky" data-sky aria-hidden="true"></canvas>
         <div class="hero__scrim" aria-hidden="true"></div>
+        <!-- data-depth: Anteil der Bühnenhöhe, um den die Ebene am Ende der Kranfahrt gesunken ist. Die Pfade baut sky.js. -->
+        <div class="hero__land" aria-hidden="true">
+          <svg class="hero__layer hero__layer--far" data-land="far" data-depth="0.035" preserveAspectRatio="none">
+            <defs><linearGradient id="land-far" gradientUnits="userSpaceOnUse" x1="0" x2="0"><stop offset="0"/><stop offset="1"/></linearGradient></defs>
+            <path fill="url(#land-far)"/>
+          </svg>
+          <svg class="hero__layer hero__layer--mid" data-land="mid" data-depth="0.085" preserveAspectRatio="none">
+            <defs><linearGradient id="land-mid" gradientUnits="userSpaceOnUse" x1="0" x2="0"><stop offset="0"/><stop offset="1"/></linearGradient></defs>
+            <path fill="url(#land-mid)"/>
+          </svg>
+          <svg class="hero__layer hero__layer--near" data-land="near" data-depth="0.17" preserveAspectRatio="none">
+            <defs><linearGradient id="land-near" gradientUnits="userSpaceOnUse" x1="0" x2="0"><stop offset="0"/><stop offset="1"/></linearGradient></defs>
+            <path fill="url(#land-near)"/>
+          </svg>
+          <svg class="hero__layer hero__layer--fore" data-land="fore" data-depth="0.6" preserveAspectRatio="none">
+            <path class="hero__ground"/>
+            <g class="hero__cam" data-cam>
+              <path class="hero__legs" data-cam-legs/>
+              <path data-cam-body/>
+              <circle class="hero__led" data-cam-led r="1.1"/>
+            </g>
+          </svg>
+        </div>
         <div class="hero__readout" aria-hidden="true">
           <div><span>Belichtung</span><b data-exposure>00:00:00</b></div>
           <div><span>Erddrehung</span><b data-rotation>0,0°</b></div>

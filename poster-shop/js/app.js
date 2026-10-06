@@ -1406,8 +1406,15 @@
   const expoEl = $("[data-exposure]");
   const rotEl = $("[data-rotation]");
   const hint = $("[data-hero-hint]");
-  const MAX_EXPOSURE = 1.36; // rad, ~78° bzw. 5 h 12 min
+  const MAX_EXPOSURE = (78 * Math.PI) / 180; // rad, genau 78° bzw. 5 h 12 min
   const heroState = { intro: 0, scroll: 0 };
+  // Kranfahrt: jede Landschaftsebene sinkt um ihren Anteil der Bühnenhöhe (data-depth),
+  // nahe Ebenen weit, ferne kaum. Der Himmel bleibt stehen.
+  const heroStage = $(".hero__stage");
+  const heroLayers = motion && heroStage
+    ? $$("[data-depth]", heroStage).map((el) => ({ depth: parseFloat(el.dataset.depth) || 0, setY: gsap.quickSetter(el, "y", "px") }))
+    : [];
+  let stageH = heroStage ? heroStage.clientHeight : 0;
 
   function pad(n) { return String(n).padStart(2, "0"); }
   function setExposure(rad) {
@@ -1424,6 +1431,10 @@
     const t = heroState.scroll;
     const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     setExposure(start + (MAX_EXPOSURE - start) * eased);
+    // Der Kran zieht sofort an und läuft weich aus. Beim Laden setzt er von etwas
+    // höher auf, die Ebenen steigen also kurz in ihre Ausgangslage.
+    const crane = 0.55 * t + 0.45 * (0.5 - 0.5 * Math.cos(Math.PI * t)) + 0.16 * (1 - heroState.intro);
+    for (let i = 0; i < heroLayers.length; i++) heroLayers[i].setY(heroLayers[i].depth * crane * stageH);
   }
 
   if (!motion) {
@@ -1443,6 +1454,11 @@
       onUpdate: heroUpdate,
       scrollTrigger: { trigger: "[data-hero]", start: "top top", end: "bottom bottom", scrub: 0.6 },
     });
+    ScrollTrigger.addEventListener("refresh", () => {
+      stageH = heroStage ? heroStage.clientHeight : 0;
+      heroUpdate();
+    });
+    heroUpdate();
     ScrollTrigger.create({
       trigger: "[data-hero]",
       start: "top top-=40",
