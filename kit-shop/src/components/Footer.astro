@@ -1,0 +1,258 @@
+---
+import { site, euro } from '../data/site';
+import { kits } from '../data/kits';
+const kumpel = kits.find((k) => k.id === 'kumpel')!;
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer on-pcb" data-footer>
+  <svg class="traces" viewBox="0 0 1440 560" preserveAspectRatio="xMaxYMin slice" aria-hidden="true">
+    <g class="trace-lines">
+      <path d="M760 -20 V60 L820 120 H1460"></path>
+      <path d="M900 -20 V120 L960 180 H1180 L1240 240 H1460"></path>
+      <path d="M1040 580 V420 L1100 360 H1460"></path>
+      <path d="M840 580 V470 L900 410 H980"></path>
+    </g>
+    <g class="trace-pulses">
+      <path d="M760 -20 V60 L820 120 H1460"></path>
+      <path d="M1040 580 V420 L1100 360 H1460"></path>
+    </g>
+    <g class="trace-vias">
+      <circle cx="1180" cy="180" r="7"></circle>
+      <circle cx="980" cy="410" r="7"></circle>
+      <circle cx="820" cy="120" r="7"></circle>
+    </g>
+  </svg>
+
+  <div class="wrap inner">
+    <div class="cta">
+      <h2 class="cta-title" data-reveal-title>Dein Schreibtisch ist zu leer.</h2>
+      <button class="btn btn--pink" type="button" data-add="kumpel">
+        Kumpel bestellen <span class="price">{euro(kumpel.price)}</span>
+      </button>
+    </div>
+
+    <div class="cols">
+      <nav class="col" aria-label="Shop">
+        <p class="label">Shop</p>
+        <ul>
+          {
+            kits.map((k) => (
+              <li>
+                <a href="/#bausaetze">{k.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      <nav class="col" aria-label="Hilfe">
+        <p class="label">Hilfe</p>
+        <ul>
+          <li><a href="/#ablauf">So läuft's</a></li>
+          <li><a href="/#fragen">Fragen</a></li>
+          <li><a href={`mailto:${site.email}`}>Kontakt</a></li>
+        </ul>
+      </nav>
+      <nav class="col" aria-label="Rechtliches">
+        <p class="label">Rechtliches</p>
+        <ul>
+          <li><a href="/impressum/">Impressum</a></li>
+          <li><a href="/datenschutz/">Datenschutz</a></li>
+          <li><a href="/agb/">AGB</a></li>
+          <li><a href="/widerruf/">Widerruf</a></li>
+          <li><a href="/versand/">Versand und Zahlung</a></li>
+        </ul>
+      </nav>
+      <form class="newsletter" id="newsletter" data-newsletter novalidate>
+        <label class="label" for="nl-email">Neue Bausätze zuerst erfahren</label>
+        <div class="field">
+          <input id="nl-email" name="email" type="email" autocomplete="email" placeholder="du@beispiel.de" required />
+          <button class="btn btn--pink btn--sm" type="submit">Eintragen</button>
+        </div>
+        <p class="nl-msg" data-nl-msg role="status" hidden></p>
+        <p class="nl-note">Höchstens eine Mail im Monat. Abmelden mit einem Klick.</p>
+      </form>
+    </div>
+
+    <div class="bottom">
+      <p class="wordmark" aria-hidden="true" data-wordmark>{site.name}</p>
+      <div class="legal">
+        <p>Enthält verschluckbare Kleinteile.</p>
+        <p>© {year} {site.name}</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    overflow: hidden;
+    padding-top: clamp(96px, 12vw, 180px);
+  }
+  .traces {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: min(560px, 60%);
+    pointer-events: none;
+  }
+  .trace-lines path {
+    fill: none;
+    stroke: rgb(120 220 160 / 0.13);
+    stroke-width: 3;
+    stroke-linejoin: round;
+  }
+  .trace-pulses path {
+    fill: none;
+    stroke: var(--pink);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 60 1600;
+    stroke-dashoffset: 1660;
+    animation: pulse-run 7s linear infinite;
+    opacity: 0.8;
+  }
+  .trace-pulses path:nth-child(2) {
+    animation-duration: 9s;
+    animation-delay: -4s;
+  }
+  @keyframes pulse-run {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .trace-vias circle {
+    fill: var(--pcb);
+    stroke: var(--gold);
+    stroke-width: 3;
+    opacity: 0.55;
+  }
+  .inner {
+    position: relative;
+  }
+  .cta {
+    display: grid;
+    justify-items: start;
+    gap: 32px;
+    padding-bottom: clamp(72px, 10vw, 140px);
+  }
+  .cta-title {
+    font-size: var(--t-h2);
+    max-width: 11em;
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.6fr);
+    gap: 40px 32px;
+    padding-block: 48px;
+    border-top: 1px solid var(--pcb-rule);
+  }
+  .col {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+  }
+  .col .label,
+  .newsletter .label {
+    color: var(--silk-soft);
+  }
+  .col ul {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .col a {
+    text-decoration: none;
+    color: var(--silk);
+    transition: color 0.2s ease;
+  }
+  @media (hover: hover) {
+    .col a:hover {
+      color: var(--pink);
+    }
+  }
+  .newsletter {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+  }
+  .field {
+    display: flex;
+    gap: 8px;
+    padding: 5px;
+    border-radius: 999px;
+    background: rgb(233 242 236 / 0.08);
+    border: 1px solid var(--pcb-rule);
+  }
+  .field input {
+    flex: 1;
+    min-width: 0;
+    padding: 0 14px;
+    border: 0;
+    background: transparent;
+    color: var(--silk);
+    font: inherit;
+    font-size: 0.9375rem;
+  }
+  .field input::placeholder {
+    color: rgb(233 242 236 / 0.45);
+  }
+  .field input:focus {
+    outline: none;
+  }
+  .field:focus-within {
+    border-color: var(--silk);
+  }
+  .nl-msg {
+    font-size: 0.875rem;
+    color: var(--pink);
+  }
+  .nl-note {
+    font-size: 0.75rem;
+    color: var(--silk-soft);
+  }
+  .bottom {
+    padding-top: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-stretch: 125%;
+    font-size: clamp(4rem, 19.6vw, 18.5rem);
+    letter-spacing: -0.055em;
+    line-height: 0.8;
+    color: var(--silk);
+    margin-left: -0.04em;
+    white-space: nowrap;
+  }
+  .legal {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-top: 28px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--silk-soft);
+  }
+  @media (max-width: 900px) {
+    .cols {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .newsletter {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 560px) {
+    .cols {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

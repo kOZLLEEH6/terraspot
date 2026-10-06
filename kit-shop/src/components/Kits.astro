@@ -1,0 +1,361 @@
+---
+import { kits, addons } from '../data/kits';
+import { euro } from '../data/site';
+import KitArt from './KitArt.astro';
+
+const levelName = { 1: 'Einsteiger', 2: 'Mit Löten', 3: 'Fortgeschritten' } as const;
+const loetset = addons.find((a) => a.id === 'loetset')!;
+---
+
+<section class="kits" id="bausaetze" aria-labelledby="kits-title">
+  <div class="wrap">
+    <div class="head">
+      <div class="section-head">
+        <p class="label">Shop</p>
+        <h2 id="kits-title" data-reveal-title>Die Bausätze.</h2>
+      </div>
+      <p class="lead">
+        Jeder Bausatz ist komplett: alle Teile, eine gedruckte Kurzanleitung und die ausführliche Anleitung mit Fotos
+        online. Die Nummer zeigt die Reihenfolge, in der du am meisten lernst.
+      </p>
+    </div>
+
+    <div class="grid" data-kit-grid>
+      {
+        kits.map((kit) => (
+          <article class:list={['kit', { 'is-soon': kit.status === 'soon', 'is-featured': kit.id === 'kumpel' }]} data-kit>
+            <div class="art">
+              <span class="nr num" aria-hidden="true">
+                {kit.nr}
+              </span>
+              {kit.status === 'soon' && <span class="badge label">Bald</span>}
+              {kit.id === 'kumpel' && <span class="badge badge--pink label">Beliebt</span>}
+              <div class="art-inner" data-parallax>
+                <KitArt kit={kit.id} />
+              </div>
+            </div>
+            <div class="body">
+              <div class="meta">
+                <p class="label">Bausatz {kit.nr}</p>
+                <p class="level label" aria-label={`Schwierigkeit ${kit.level} von 3: ${levelName[kit.level]}`}>
+                  <span class="pips" aria-hidden="true">
+                    {[1, 2, 3].map((n) => (
+                      <span class:list={['pip', { on: n <= kit.level }]} />
+                    ))}
+                  </span>
+                  {levelName[kit.level]}
+                </p>
+              </div>
+              <h3>{kit.name}</h3>
+              <p class="short">{kit.short}</p>
+              <dl class="specs">
+                <div>
+                  <dt class="label">Lötstellen</dt>
+                  <dd class="num">{kit.solder === 0 ? 'keine' : kit.solder}</dd>
+                </div>
+                <div>
+                  <dt class="label">Bauzeit</dt>
+                  <dd>{kit.time}</dd>
+                </div>
+                <div>
+                  <dt class="label">Alter</dt>
+                  <dd>{kit.age}</dd>
+                </div>
+              </dl>
+              <ul class="learn" aria-label="Was du lernst">
+                {kit.learn.map((l) => (
+                  <li>{l}</li>
+                ))}
+              </ul>
+              <div class="buy">
+                <p class="price">
+                  <span class="amount num">{kit.status === 'soon' ? `ca. ${euro(kit.price)}` : euro(kit.price)}</span>
+                  <span class="vat">{kit.status === 'soon' ? 'erscheint im Winter' : 'inkl. MwSt., zzgl. Versand'}</span>
+                </p>
+                {kit.status === 'available' ? (
+                  <button class="btn btn--ink btn--sm" type="button" data-add={kit.id}>
+                    In den Korb
+                  </button>
+                ) : (
+                  <a class="btn btn--line btn--sm" href="#newsletter">
+                    Bescheid geben
+                  </a>
+                )}
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="addon">
+      <div class="addon-icon" aria-hidden="true">
+        <svg viewBox="0 0 120 60">
+          <rect x="6" y="24" width="56" height="14" rx="7" fill="#0d1512"></rect>
+          <rect x="58" y="27" width="22" height="8" rx="2" fill="#c4c8cc"></rect>
+          <path d="M80 29 L112 31 L80 33 Z" fill="#9aa0a6"></path>
+          <rect x="16" y="27" width="22" height="8" rx="4" fill="#ff8db7"></rect>
+        </svg>
+      </div>
+      <div class="addon-text">
+        <h3>Noch kein Lötkolben?</h3>
+        <p>{loetset.short}</p>
+      </div>
+      <div class="addon-buy">
+        <span class="amount num">{euro(loetset.price)}</span>
+        <button class="btn btn--line btn--sm" type="button" data-add={loetset.id}>In den Korb</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .kits {
+    padding-block: clamp(88px, 11vw, 160px) clamp(96px, 14vw, 200px);
+  }
+  .head {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 24px 64px;
+    align-items: end;
+    margin-bottom: clamp(48px, 7vw, 80px);
+  }
+  .head h2 {
+    font-size: var(--t-h2);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .kit {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-radius: 10px;
+    background: var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule);
+    overflow: hidden;
+    transition:
+      box-shadow 0.3s ease,
+      transform 0.4s var(--ease-out);
+  }
+  @media (hover: hover) {
+    .kit:hover {
+      box-shadow:
+        0 0 0 1px var(--rule-strong),
+        0 24px 48px -28px rgb(13 21 18 / 0.35);
+    }
+    .kit:hover .art-inner :global(svg) {
+      transform: translateY(-6px) scale(1.03);
+    }
+  }
+  .art {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(120% 90% at 50% 100%, var(--paper-sunk), transparent 70%),
+      var(--paper);
+    border-bottom: 1px solid var(--rule);
+    overflow: hidden;
+  }
+  .art-inner {
+    width: 86%;
+  }
+  .art-inner :global(svg) {
+    transition: transform 0.6s var(--ease-out);
+  }
+  .nr {
+    position: absolute;
+    left: 14px;
+    top: 10px;
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 800;
+    font-stretch: 125%;
+    letter-spacing: -0.04em;
+    color: rgb(13 21 18 / 0.1);
+    line-height: 1;
+  }
+  .badge {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .badge--pink {
+    background: var(--pink);
+    color: var(--ink);
+  }
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 20px 22px;
+    flex: 1;
+  }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-soft);
+  }
+  .level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pips {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .pip {
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--ink-soft);
+  }
+  .pip.on {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  .kit h3 {
+    font-size: 1.75rem;
+  }
+  .short {
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+  @media (min-width: 641px) {
+    /* Gleiche Höhe für die Beschreibung, damit Eckdaten in allen Karten auf einer Linie liegen */
+    .short {
+      min-height: calc(1.55em * 4);
+    }
+  }
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 4px 0 0;
+    padding: 12px 0;
+    border-block: 1px solid var(--rule);
+  }
+  .specs div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .specs dt {
+    color: var(--ink-faint);
+    font-size: 0.625rem;
+  }
+  .specs dd {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .learn {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .learn li {
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--paper-sunk);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .buy {
+    margin-top: auto;
+    padding-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .price {
+    display: grid;
+    gap: 2px;
+  }
+  .amount {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-stretch: 112%;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .vat {
+    font-size: 0.6875rem;
+    color: var(--ink-faint);
+  }
+  .is-soon .art-inner,
+  .is-soon h3,
+  .is-soon .short {
+    opacity: 0.7;
+  }
+
+  .addon {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 24px;
+    padding: 20px 24px;
+    border-radius: 10px;
+    border: 1px dashed var(--rule-strong);
+  }
+  .addon-icon svg {
+    width: 96px;
+    height: auto;
+  }
+  .addon-text {
+    display: grid;
+    gap: 4px;
+  }
+  .addon h3 {
+    font-size: 1.25rem;
+  }
+  .addon p {
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+  .addon-buy {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  @media (max-width: 1180px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 900px) {
+    .head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 640px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .addon {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+    .addon-icon {
+      display: none;
+    }
+  }
+</style>

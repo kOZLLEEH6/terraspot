@@ -1,0 +1,345 @@
+---
+// Interaktiver Code: Laune wählen, Code ändert sich, wird "hochgeladen",
+// das OLED zeigt das neue Gesicht. So fühlt sich die Arbeit am Gerät an.
+const moods = [
+  { id: 'normal', token: 'DEFAULT', label: 'Normal' },
+  { id: 'happy', token: 'HAPPY', label: 'Froh' },
+  { id: 'tired', token: 'TIRED', label: 'Müde' },
+  { id: 'angry', token: 'ANGRY', label: 'Sauer' },
+  { id: 'love', token: 'LOVE', label: 'Verliebt' },
+];
+---
+
+<section class="code-play on-pcb" id="code" aria-labelledby="code-title" data-codeplay>
+  <div class="wrap">
+    <div class="head">
+      <div class="section-head">
+        <p class="label">Programmieren</p>
+        <h2 id="code-title" data-reveal-title>Ändere eine Zeile. Sieh, was passiert.</h2>
+      </div>
+      <p class="lead">
+        So lernst du mit dem Kumpel: Jede Lektion endet mit einer Zeile, die du selbst änderst. Das Display zeigt dir
+        sofort, ob es geklappt hat. Probier es hier aus.
+      </p>
+    </div>
+
+    <div class="play">
+      <div class="editor">
+        <div class="editor-bar">
+          <span class="file">kumpel.ino</span>
+          <span class="board label">ESP32-C3 · USB</span>
+        </div>
+        <div class="code-scroll">
+          <pre class="code"><code><span class="c-pre">#include</span> <span class="c-str">&lt;Kumpel.h&gt;</span>
+
+<span class="c-type">Kumpel</span> kumpel;
+
+<span class="c-type">void</span> <span class="c-fn">setup</span>() &#123;
+  kumpel.<span class="c-fn">begin</span>();            <span class="c-com">// Display und Taster starten</span>
+&#125;
+
+<span class="c-type">void</span> <span class="c-fn">loop</span>() &#123;
+  kumpel.<span class="c-fn">setMood</span>(<span class="c-tok" data-token>HAPPY</span>);<span class="c-pad" data-pad>     </span><span class="c-com">// probier was anderes</span>
+  kumpel.<span class="c-fn">update</span>();           <span class="c-com">// zeichnet 60-mal pro Sekunde</span>
+&#125;</code></pre>
+        </div>
+        <div class="moods" role="radiogroup" aria-label="Laune für den Kumpel">
+          {
+            moods.map((m) => (
+              <button
+                type="button"
+                role="radio"
+                class="mood"
+                data-mood={m.id}
+                data-token-name={m.token}
+                aria-checked={m.id === 'happy' ? 'true' : 'false'}
+              >
+                <span class="mood-token">{m.token}</span>
+                <span class="mood-label">{m.label}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="device">
+        <div class="module">
+          <div class="pins" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="pin-labels label" aria-hidden="true">
+            <span>GND</span><span>VCC</span><span>SCL</span><span>SDA</span>
+          </div>
+          <div class="glass">
+            <canvas class="oled" data-oled role="img" aria-label="OLED-Display mit den Augen des Kumpels"></canvas>
+          </div>
+          <span class="hole hole--tl" aria-hidden="true"></span>
+          <span class="hole hole--tr" aria-hidden="true"></span>
+          <span class="hole hole--bl" aria-hidden="true"></span>
+          <span class="hole hole--br" aria-hidden="true"></span>
+        </div>
+        <div class="upload" data-upload aria-live="polite">
+          <span class="upload-bar"><span data-upload-bar></span></span>
+          <span class="label" data-upload-text>Läuft · Laune HAPPY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .code-play {
+    padding-block: clamp(96px, 14vw, 200px);
+    overflow: hidden;
+  }
+  .head {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 24px 64px;
+    align-items: end;
+    margin-bottom: clamp(48px, 7vw, 88px);
+  }
+  .head h2 {
+    font-size: var(--t-h2);
+  }
+  .section-head .label {
+    color: var(--silk-soft);
+  }
+  .play {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+  .editor {
+    min-width: 0;
+    border-radius: 12px;
+    background: var(--pcb-deep);
+    border: 1px solid var(--pcb-rule);
+    overflow: hidden;
+  }
+  .editor-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--pcb-rule);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+  .file {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgb(233 242 236 / 0.08);
+  }
+  .board {
+    color: var(--silk-soft);
+  }
+  .code-scroll {
+    overflow-x: auto;
+  }
+  .code {
+    margin: 0;
+    padding: 24px 22px 28px;
+    font-family: var(--font-mono);
+    font-size: clamp(0.75rem, 0.66rem + 0.3vw, 0.875rem);
+    line-height: 1.8;
+    color: var(--silk);
+    tab-size: 2;
+  }
+  .c-pre {
+    color: #ffb3cf;
+  }
+  .c-str {
+    color: #9fe3bd;
+  }
+  .c-type {
+    color: #ffb3cf;
+  }
+  .c-fn {
+    color: #f6e2a8;
+  }
+  .c-com {
+    color: rgb(233 242 236 / 0.42);
+  }
+  .c-tok {
+    display: inline-block;
+    padding: 0 6px;
+    margin: 0 -6px;
+    border-radius: 4px;
+    background: var(--pink);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .c-tok.is-typing::after {
+    content: '';
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    margin-left: 1px;
+    vertical-align: -0.15em;
+    background: var(--ink);
+  }
+  .moods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px 18px 18px;
+    border-top: 1px solid var(--pcb-rule);
+  }
+  .mood {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid rgb(233 242 236 / 0.22);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--silk);
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.16s var(--ease-out);
+  }
+  .mood:active {
+    transform: scale(0.96);
+  }
+  .mood-token {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .mood-label {
+    font-size: 0.8125rem;
+    color: var(--silk-soft);
+  }
+  .mood[aria-checked='true'] {
+    background: var(--silk);
+    border-color: var(--silk);
+    color: var(--ink);
+  }
+  .mood[aria-checked='true'] .mood-label {
+    color: var(--ink-soft);
+  }
+  @media (hover: hover) {
+    .mood:hover {
+      border-color: var(--silk);
+    }
+  }
+
+  .device {
+    display: grid;
+    justify-items: center;
+    gap: 22px;
+  }
+  .module {
+    position: relative;
+    width: min(100%, 460px);
+    aspect-ratio: 36 / 34;
+    padding: 15% 4% 11%;
+    border-radius: 3.5%;
+    background: linear-gradient(160deg, #2556ad, #1b4593);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.08),
+      0 40px 80px -40px rgb(0 0 0 / 0.6);
+  }
+  .pins {
+    position: absolute;
+    top: 3%;
+    left: 50%;
+    display: flex;
+    gap: 3.6%;
+    width: 30%;
+    transform: translateX(-50%);
+    justify-content: space-between;
+  }
+  .pins span {
+    width: 17%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, #111 0 32%, var(--gold) 34% 100%);
+  }
+  .pin-labels {
+    position: absolute;
+    top: 9%;
+    left: 50%;
+    display: flex;
+    justify-content: space-between;
+    width: 34%;
+    transform: translateX(-50%);
+    font-size: clamp(0.4rem, 0.9vw, 0.5625rem);
+    color: rgb(255 255 255 / 0.8);
+    letter-spacing: 0;
+  }
+  .glass {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 6% 5%;
+    border-radius: 2.5%;
+    background: linear-gradient(170deg, #121518, #050607 60%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+  .oled {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 2 / 1;
+    height: auto;
+  }
+  .hole {
+    position: absolute;
+    width: 5.5%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--pcb) 0 45%, var(--gold) 47% 100%);
+  }
+  .hole--tl {
+    top: 3%;
+    left: 3%;
+  }
+  .hole--tr {
+    top: 3%;
+    right: 3%;
+  }
+  .hole--bl {
+    bottom: 3%;
+    left: 3%;
+  }
+  .hole--br {
+    bottom: 3%;
+    right: 3%;
+  }
+  .upload {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    color: var(--silk-soft);
+  }
+  .upload-bar {
+    width: 160px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgb(233 242 236 / 0.14);
+    overflow: hidden;
+  }
+  .upload-bar span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--pink);
+    transform-origin: left;
+  }
+
+  @media (max-width: 900px) {
+    .head,
+    .play {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .device {
+      order: -1;
+    }
+  }
+</style>

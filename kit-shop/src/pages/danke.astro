@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Danke für deine Bestellung" noindex>
+  <section class="thanks wrap">
+    <p class="label">Bestellung eingegangen</p>
+    <h1>Danke! Dein Kumpel ist bald unterwegs.</h1>
+    <p class="lead">
+      Die Bestätigung kommt gleich per Mail. Bis das Paket da ist, kannst du schon mal Platz auf dem Schreibtisch machen.
+    </p>
+    <a class="btn btn--ink" href="/">Zur Startseite</a>
+  </section>
+</Base>
+
+<script>
+  import { clear } from '../scripts/cart';
+  // Nach erfolgreicher Zahlung (Stripe leitet mit session_id hierher) den Korb leeren
+  if (new URLSearchParams(location.search).has('session_id')) clear();
+</script>
+
+<style>
+  .thanks {
+    min-height: 80svh;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 28px;
+    padding-block: calc(var(--header-h) + 64px) 96px;
+  }
+  .thanks h1 {
+    font-size: var(--t-h2);
+    max-width: 12em;
+  }
+</style>

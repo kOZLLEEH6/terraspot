@@ -1,0 +1,17 @@
+---
+import Legal from '../layouts/Legal.astro';
+import { site, euro } from '../data/site';
+---
+
+<Legal title="Versand und Zahlung">
+  <p>Stand im Code (src/data/site.ts), bitte mit deinen echten Konditionen abgleichen:</p>
+  <ul>
+    <li><strong>Liefergebiet</strong>: Deutschland und Österreich</li>
+    <li>
+      <strong>Versandkosten</strong>: {euro(site.shipping.flat)}, ab {euro(site.shipping.freeFrom)} Bestellwert kostenlos
+    </li>
+    <li><strong>Versand</strong> innerhalb von {site.shipping.dispatch} mit DHL</li>
+    <li><strong>Zahlung</strong> über Stripe. Welche Zahlarten erscheinen, stellst du im Stripe-Dashboard ein.</li>
+    <li>Hinweise zur Rücknahme von Altgeräten (ElektroG) und Altbatterien</li>
+  </ul>
+</Legal>

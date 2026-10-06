@@ -1,0 +1,622 @@
+---
+// Hero + Explosionsansicht in einer Bühne. Beim Scrollen dreht sich der Kumpel,
+// zerlegt sich in seine Teile (mit Positionsnummern und Stückliste) und baut
+// sich wieder zusammen. Ohne JS oder bei reduzierter Bewegung bleibt alles statisch.
+import { kits, addons, kumpelBom } from '../data/kits';
+import { euro } from '../data/site';
+import KitArt from './KitArt.astro';
+
+const kumpel = kits.find((k) => k.id === 'kumpel')!;
+const loetset = addons.find((a) => a.id === 'loetset')!;
+const shown = kumpelBom.filter((r) => r.pos <= 7);
+const partIds = ['front', 'oled', 'esp', 'board', 'caps', 'battery', 'back'];
+---
+
+<section class="kumpel" id="kumpel" data-stage-section aria-labelledby="hero-title">
+  <div class="stage" data-stage>
+    <canvas class="gl" data-gl aria-hidden="true"></canvas>
+    <div class="fallback" data-fallback aria-hidden="true">
+      <KitArt kit="kumpel" />
+    </div>
+
+    <svg class="overlay" data-overlay aria-hidden="true">
+      <g class="dims" data-dims>
+        <line data-dim="w"></line>
+        <line data-dim="h"></line>
+        <line data-dim="w-a"></line>
+        <line data-dim="w-b"></line>
+        <line data-dim="h-a"></line>
+        <line data-dim="h-b"></line>
+      </g>
+      <g class="leaders" data-leaders>
+        {
+          shown.map((row) => (
+            <g data-leader={row.pos}>
+              <line />
+              <circle r="3" />
+            </g>
+          ))
+        }
+      </g>
+    </svg>
+    <div class="dim-labels" data-dim-labels aria-hidden="true">
+      <span class="dim-label num" data-dim-label="w">56 mm</span>
+      <span class="dim-label num" data-dim-label="h">44 mm</span>
+    </div>
+    <div class="balloons" data-balloons aria-hidden="true">
+      {
+        shown.map((row, i) => (
+          <button type="button" class="balloon num" tabindex="-1" data-balloon={row.pos} data-part={partIds[i]}>
+            {row.pos}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="wrap ui">
+      <div class="hero-copy" data-hero-copy>
+        <p class="label eyebrow">
+          <span>Bausatz {kumpel.nr}</span><span>ESP32-C3</span><span>{kumpel.age}</span>
+        </p>
+        <h1 id="hero-title" class="hero-title" data-split>Löte dir einen Kumpel.</h1>
+        <p class="lead">
+          Ein Karton voller Teile, eine Anleitung, ein Abend. Danach sitzt ein kleiner Kerl auf deinem
+          Schreibtisch, blinzelt dich an und macht, was du ihm beibringst.
+        </p>
+        <div class="cta-row">
+          <button class="btn btn--pink" type="button" data-add="kumpel" data-mood-hover="happy">
+            In den Korb <span class="price">{euro(kumpel.price)}</span>
+          </button>
+          <a class="btn btn--line" href="#stueckliste" data-scroll-to="explode">Was drin ist</a>
+        </div>
+        <ul class="facts label" aria-label="Eckdaten">
+          <li>{kumpel.time} Bauzeit</li>
+          <li>{kumpel.solder} Lötstellen</li>
+          <li>Code offen</li>
+        </ul>
+      </div>
+
+      <aside class="bom" id="stueckliste" data-bom aria-labelledby="bom-title">
+        <p class="label bom-kicker">Stückliste · Kumpel v1</p>
+        <h2 id="bom-title" class="bom-title">Neun Positionen. Alles drin.</h2>
+        <table class="bom-table">
+          <thead>
+            <tr>
+              <th scope="col" class="label">Pos.</th>
+              <th scope="col" class="label">Teil</th>
+              <th scope="col" class="label qty">Stk.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              kumpelBom.map((row) => (
+                <tr data-row={row.pos} data-part={row.pos <= 7 ? partIds[row.pos - 1] : undefined}>
+                  <td class="pos num">{row.pos}</td>
+                  <td>
+                    <span class="part-name">{row.name}</span>
+                    <span class="part-spec">{row.spec}</span>
+                  </td>
+                  <td class="qty num">{row.qty}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+        <p class="bom-note">
+          Nicht dabei: Lötkolben und USB-C-Kabel. Den Lötkolben gibt's als{' '}
+          <button type="button" class="inline-add" data-add="loetset">Lötset für {euro(loetset.price)}</button>{' '}
+          dazu.
+        </p>
+      </aside>
+
+      <div class="end-copy" data-end-copy>
+        <p class="label">Fertig zusammengebaut</p>
+        <p class="end-title">Ein Abend. Dann gehört er dir.</p>
+      </div>
+    </div>
+
+    <p class="status label" data-status aria-live="off">
+      <span class="dot"></span>
+      <span data-status-text>schaut dich an</span>
+    </p>
+  </div>
+</section>
+
+<style>
+  .kumpel {
+    position: relative;
+  }
+  /* Mit JS wird die Bühne zum Scroll-Raum: sie bleibt stehen, während der Abschnitt scrollt */
+  :global(html.js-stage) .kumpel {
+    height: 420svh;
+  }
+  .stage {
+    position: relative;
+    height: 100svh;
+    min-height: 640px;
+    overflow: hidden;
+  }
+  :global(html.js-stage) .stage {
+    position: sticky;
+    top: 0;
+  }
+  .gl {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .gl.is-ready {
+    opacity: 1;
+  }
+  .fallback {
+    position: absolute;
+    right: max(var(--gutter), calc((100vw - var(--maxw)) / 2));
+    top: 50%;
+    width: min(44vw, 520px);
+    transform: translateY(-46%);
+  }
+  :global(html.js-gl) .fallback {
+    display: none;
+  }
+
+  .ui {
+    position: relative;
+    height: 100%;
+    pointer-events: none;
+  }
+  .ui :is(a, button, table) {
+    pointer-events: auto;
+  }
+
+  /* Hero-Text */
+  .hero-copy {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: min(100%, 600px);
+    transform: translateY(-50%);
+    display: grid;
+    gap: 28px;
+    padding-top: calc(var(--header-h) * 0.5);
+  }
+  .eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: var(--ink-soft);
+  }
+  .eyebrow span {
+    padding: 6px 10px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+  }
+  .eyebrow span:first-child {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .hero-title {
+    font-size: var(--t-h1);
+    line-height: 0.92;
+    max-width: 9.5em;
+  }
+  .hero-title :global(.line) {
+    display: block;
+    overflow: clip;
+    padding-bottom: 0.06em;
+    margin-bottom: -0.06em;
+  }
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink-faint);
+  }
+  .facts li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .facts li::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    background: var(--ink-faint);
+  }
+
+  /* Bemaßung und Positionsnummern */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .dims {
+    opacity: 0;
+  }
+  .dims line {
+    stroke: var(--ink-faint);
+    stroke-width: 1;
+  }
+  .dim-labels {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .dim-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 2px 6px;
+    background: var(--paper);
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    opacity: 0;
+    will-change: transform;
+  }
+  .leaders line {
+    stroke: var(--ink);
+    stroke-width: 1;
+  }
+  .leaders circle {
+    fill: var(--ink);
+  }
+  .leaders g {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .leaders g.is-active line {
+    stroke: #d6487f;
+  }
+  .leaders g.is-active circle {
+    fill: #d6487f;
+  }
+  .balloons {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .balloon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ink);
+    border-radius: 50%;
+    background: var(--paper-raised);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink);
+    opacity: 0;
+    cursor: default;
+    will-change: transform;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+  .balloon.is-active {
+    background: var(--pink);
+    border-color: var(--ink);
+  }
+
+  /* Stückliste */
+  .bom {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: min(400px, 36vw);
+    transform: translateY(-50%);
+    display: grid;
+    gap: 16px;
+    padding-top: calc(var(--header-h) * 0.5);
+    opacity: 0;
+    visibility: hidden;
+  }
+  .bom-kicker {
+    color: var(--ink-soft);
+  }
+  .bom-title {
+    font-size: clamp(1.75rem, 1.2rem + 1.4vw, 2.5rem);
+  }
+  .bom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+  .bom-table th {
+    text-align: left;
+    padding: 0 0 8px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    border-bottom: 1px solid var(--ink);
+  }
+  .bom-table td {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .bom-table tr {
+    transition: background-color 0.2s ease;
+  }
+  .bom-table tbody tr[data-part] {
+    cursor: default;
+  }
+  .bom-table tr.is-active {
+    background: var(--pink-soft);
+  }
+  .pos {
+    width: 4.2em;
+    padding-left: 8px !important;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .qty {
+    width: 3em;
+    text-align: right;
+    padding-right: 8px !important;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+  th.qty {
+    padding-right: 8px !important;
+  }
+  th:first-child {
+    padding-left: 8px !important;
+  }
+  .part-name {
+    display: block;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .part-spec {
+    display: block;
+    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+  .bom-note {
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
+  .inline-add {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--pink);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* Abschluss */
+  .end-copy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: clamp(32px, 9vh, 96px);
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .end-copy .label {
+    color: var(--ink-soft);
+  }
+  .end-title {
+    font-family: var(--font-display);
+    font-size: var(--t-h2);
+    font-weight: 800;
+    font-stretch: 125%;
+    letter-spacing: -0.03em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .status {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-faint);
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  :global(html.js-gl) .status {
+    display: inline-flex;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pink);
+    box-shadow: 0 0 0 3px rgb(255 141 183 / 0.25);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      box-shadow: 0 0 0 6px rgb(255 141 183 / 0.08);
+    }
+  }
+
+  /* Ohne Scroll-Sequenz (kein JS, reduzierte Bewegung): Hero und Stückliste als normale Abschnitte */
+  :global(html:not(.js-stage)) .stage {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 40px;
+    width: min(100% - 2 * var(--gutter), var(--maxw));
+    margin: 0 auto;
+    padding-top: calc(var(--header-h) + 48px);
+  }
+  :global(html:not(.js-stage)) .gl,
+  :global(html:not(.js-stage)) .overlay,
+  :global(html:not(.js-stage)) .balloons,
+  :global(html:not(.js-stage)) .dim-labels,
+  :global(html:not(.js-stage)) .end-copy,
+  :global(html:not(.js-stage)) .status {
+    display: none;
+  }
+  :global(html:not(.js-stage)) .fallback {
+    display: block;
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    width: min(100%, 520px);
+    justify-self: center;
+  }
+  :global(html:not(.js-stage)) .ui {
+    display: contents;
+  }
+  :global(html:not(.js-stage)) .hero-copy {
+    position: relative;
+    top: auto;
+    transform: none;
+    width: 100%;
+    padding: 0;
+  }
+  :global(html:not(.js-stage)) .bom {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    width: min(100%, 720px);
+    padding-block: 48px 96px;
+    opacity: 1;
+    visibility: visible;
+    order: 3;
+  }
+  :global(html:not(.js-stage)) .hero-copy {
+    order: 1;
+  }
+  :global(html:not(.js-stage)) .fallback {
+    order: 2;
+  }
+  @media (min-width: 861px) {
+    :global(html:not(.js-stage)) .stage {
+      grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    }
+    :global(html:not(.js-stage)) .hero-copy {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    :global(html:not(.js-stage)) .fallback {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    :global(html:not(.js-stage)) .bom {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Niedrige Bildschirme: Stückliste kompakter */
+  @media (min-width: 861px) and (max-height: 820px) {
+    .bom {
+      gap: 12px;
+    }
+    .bom-title {
+      font-size: clamp(1.5rem, 1rem + 1.2vw, 2rem);
+    }
+    .bom-table td {
+      padding: 6px 0;
+    }
+    .part-spec {
+      display: none;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .hero-copy {
+      top: calc(var(--header-h) + 12px);
+      transform: none;
+      gap: 18px;
+      padding-top: 0;
+    }
+    .hero-title {
+      font-size: clamp(2.6rem, 1.4rem + 7vw, 4rem);
+    }
+    .hero-copy .lead {
+      font-size: 1.0625rem;
+    }
+    .facts {
+      display: none;
+    }
+    .bom {
+      top: auto;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      width: auto;
+      transform: none;
+      padding-top: 0;
+      gap: 10px;
+    }
+    .bom-title,
+    .bom-kicker {
+      display: none;
+    }
+    .bom-table thead {
+      display: none;
+    }
+    .bom-table td {
+      padding: 5px 0;
+    }
+    .part-spec {
+      display: none;
+    }
+    .bom-table tbody tr:nth-child(n + 8) {
+      display: none;
+    }
+    .bom-note {
+      font-size: 0.8125rem;
+    }
+    .end-copy {
+      bottom: auto;
+      top: calc(var(--header-h) + 24px);
+    }
+    .status {
+      display: none !important;
+    }
+  }
+  @media (max-width: 860px) {
+    :global(html:not(.js-stage)) .bom-title,
+    :global(html:not(.js-stage)) .bom-kicker,
+    :global(html:not(.js-stage)) .part-spec,
+    :global(html:not(.js-stage)) .bom-table tbody tr {
+      display: revert;
+    }
+  }
+</style>

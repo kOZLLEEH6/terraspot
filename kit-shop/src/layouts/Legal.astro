@@ -1,0 +1,81 @@
+---
+// Gerüst für Rechtstexte. Die Inhalte sind bewusst Checklisten und keine
+// fertigen Texte: Rechtstexte für einen Shop gehören von einem Anbieter
+// (z. B. Händlerbund, IT-Recht Kanzlei, eRecht24) oder einer Anwältin.
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <article class="legal wrap">
+    <header class="legal-head">
+      <a class="back" href="/">Zur Startseite</a>
+      <h1>{title}</h1>
+    </header>
+    <aside class="todo" role="note">
+      <p class="label">Platzhalter</p>
+      <p>
+        Diese Seite ist noch nicht ausgefüllt. Die Liste unten zeigt, was hier vor dem Livegang stehen muss. Rechtstexte
+        bitte nicht selbst schreiben, sondern von einem Anbieter für Shop-Rechtstexte oder einer Anwältin.
+      </p>
+    </aside>
+    <div class="prose">
+      <slot />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .legal {
+    padding-block: calc(var(--header-h) + 64px) 120px;
+    max-width: 760px;
+    display: grid;
+    gap: 32px;
+  }
+  .legal-head {
+    display: grid;
+    gap: 20px;
+  }
+  .legal-head h1 {
+    font-size: var(--t-h2);
+  }
+  .back {
+    justify-self: start;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration-color: var(--pink);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .todo {
+    display: grid;
+    gap: 8px;
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    background: var(--pink-soft);
+  }
+  .prose {
+    display: grid;
+    gap: 18px;
+    color: var(--ink-soft);
+  }
+  .prose :global(h2) {
+    margin-top: 16px;
+    font-size: 1.5rem;
+    color: var(--ink);
+  }
+  .prose :global(ul) {
+    margin: 0;
+    padding-left: 1.2em;
+    display: grid;
+    gap: 8px;
+  }
+  .prose :global(strong) {
+    color: var(--ink);
+  }
+</style>

@@ -1,0 +1,47 @@
+---
+import Base from '../layouts/Base.astro';
+import KumpelStage from '../components/KumpelStage.astro';
+import Process from '../components/Process.astro';
+import CodePlay from '../components/CodePlay.astro';
+import Kits from '../components/Kits.astro';
+import Faq from '../components/Faq.astro';
+import { kits } from '../data/kits';
+import { site } from '../data/site';
+
+// Strukturierte Daten, damit Google Preise und Verfügbarkeit anzeigen kann
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': kits
+    .filter((k) => k.status === 'available')
+    .map((k) => ({
+      '@type': 'Product',
+      name: `Bausatz ${k.nr} ${k.name}`,
+      description: k.short,
+      brand: { '@type': 'Brand', name: site.name },
+      offers: {
+        '@type': 'Offer',
+        price: (k.price / 100).toFixed(2),
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+        url: new URL('/#bausaetze', Astro.site).toString(),
+      },
+    })),
+};
+---
+
+<Base title="Löte dir einen Kumpel">
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script is:inline slot="head">
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('js-stage');
+  </script>
+
+  <KumpelStage />
+  <Process />
+  <CodePlay />
+  <Kits />
+  <Faq />
+</Base>
+
+<script>
+  import '../scripts/home';
+</script>

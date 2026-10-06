@@ -1,0 +1,283 @@
+/* Layout: 12-Spalten-Raster bis 1320px, Inhalte linksbündig wie ein Datenblatt.
+   Technische Details (Bemaßung, Positionsnummern, Stückliste) als feine Linien.
+   Farben: Datenblatt-Papier, Tinte, Lötstopplack-Grün, Antistatik-Pink als Signal. */
+:root {
+  --paper: #eef0ea;
+  --paper-raised: #f8f9f5;
+  --paper-sunk: #e3e7de;
+  --ink: #0d1512;
+  --ink-soft: #46524c;
+  --ink-faint: #76817b;
+  --rule: rgb(13 21 18 / 0.12);
+  --rule-strong: rgb(13 21 18 / 0.28);
+
+  --pcb: #0a3a2a;
+  --pcb-deep: #062519;
+  --pcb-rule: rgb(225 240 230 / 0.14);
+  --silk: #e9f2ec;
+  --silk-soft: rgb(233 242 236 / 0.68);
+
+  --pink: #ff8db7;
+  --pink-hover: #ff77a9;
+  --pink-soft: #ffd6e5;
+  --gold: #d6af57;
+  --oled: #d4f6ff;
+
+  --font-display: 'Archivo Variable', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-text: 'Archivo Variable', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Martian Mono Variable', 'Martian Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --t-label: 0.6875rem;
+  --t-small: 0.875rem;
+  --t-body: 1.0625rem;
+  --t-lead: clamp(1.125rem, 1.02rem + 0.4vw, 1.3125rem);
+  --t-h3: clamp(1.375rem, 1.2rem + 0.6vw, 1.75rem);
+  --t-h2: clamp(2.25rem, 1.45rem + 3.2vw, 4.5rem);
+  --t-h1: clamp(2.75rem, 1.2rem + 5.6vw, 6.75rem);
+
+  --gutter: clamp(16px, 4vw, 48px);
+  --maxw: 1320px;
+  --radius: 6px;
+  --header-h: 68px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-h) + 16px);
+}
+
+/* Lenis übernimmt das sanfte Scrollen. Ohne JS bleibt es beim normalen Verhalten. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--t-body);
+  font-stretch: 100%;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--pink);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 125%;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.wrap {
+  width: min(100% - 2 * var(--gutter), var(--maxw));
+  margin-inline: auto;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lead {
+  font-size: var(--t-lead);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: 34em;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  transform: translateY(-150%);
+  transition: transform 0.2s var(--ease-out);
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-text);
+  font-size: 1rem;
+  font-weight: 650;
+  font-stretch: 110%;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.16s var(--ease-out),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.btn--pink {
+  background: var(--pink);
+  color: var(--ink);
+}
+.btn--ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn--line {
+  border-color: var(--rule-strong);
+  color: var(--ink);
+  background: transparent;
+}
+@media (hover: hover) {
+  .btn--pink:hover {
+    background: var(--pink-hover);
+  }
+  .btn--ink:hover {
+    background: #26302c;
+  }
+  .btn--line:hover {
+    border-color: var(--ink);
+  }
+}
+.btn .price {
+  padding-left: 0.6em;
+  border-left: 1px solid currentColor;
+  font-variant-numeric: tabular-nums;
+}
+.btn--sm {
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 0.9375rem;
+}
+
+/* Abschnitts-Kopf: kleines Mono-Label über großer Headline */
+.section-head {
+  display: grid;
+  gap: 20px;
+}
+.section-head .label {
+  color: var(--ink-soft);
+}
+
+/* Dunkle Abschnitte (Platinengrün) */
+.on-pcb {
+  background: var(--pcb);
+  color: var(--silk);
+}
+.on-pcb :focus-visible {
+  outline-color: var(--silk);
+}
+.on-pcb .lead {
+  color: var(--silk-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
