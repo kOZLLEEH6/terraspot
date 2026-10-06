@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Lichtjahr Prints</title>
+  <meta name="description" content="Astrofotografie als Poster: Nebel, Galaxien und Sternhaufen, selbst fotografiert und als Fine-Art-Print gedruckt.">
+  <meta name="theme-color" content="#070A12">
+  <meta property="og:title" content="Lichtjahr · Astrofotografie als Poster">
+  <meta property="og:description" content="Nebel, Galaxien und Sternhaufen, selbst fotografiert und als Poster gedruckt.">
+  <meta property="og:image" content="img/prints/m45-plejaden-sm.jpg">
+  <!-- og:image braucht später die volle Adresse, z. B. https://deine-domain.de/img/prints/m45-plejaden-sm.jpg -->
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preload" href="fonts/jost.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+  <a class="skip" href="#prints">Zu den Prints springen</a>
+
+  <header class="nav" data-nav>
+    <a class="nav__brand" href="#top" aria-label="Lichtjahr, zum Seitenanfang">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span data-brand>Lichtjahr</span>
+    </a>
+    <nav class="nav__links" aria-label="Hauptnavigation">
+      <a href="#prints">Prints</a>
+      <a href="#druck">Druck</a>
+      <a href="#formate">Formate</a>
+      <a href="#ueber">Über mich</a>
+    </nav>
+    <button class="nav__cart" type="button" data-open-cart aria-label="Warenkorb öffnen, leer">
+      <span class="nav__label">Warenkorb</span>
+      <span class="nav__count" data-cart-count>
+        <span class="nav__glow" data-cart-glow aria-hidden="true"></span>
+        <svg class="nav__ring" viewBox="0 0 40 40" aria-hidden="true">
+          <circle class="nav__ring-track" cx="20" cy="20" r="17"/>
+          <circle class="nav__ring-arc" data-cart-arc cx="20" cy="20" r="17" pathLength="100"/>
+          <circle class="nav__ring-echo" data-cart-echo cx="20" cy="20" r="17"/>
+        </svg>
+        <span class="nav__digits" data-cart-digits aria-hidden="true"><b>0</b></span>
+      </span>
+    </button>
+  </header>
+
+  <main id="top">
+    <!-- Hero: Scrollen verlängert die Belichtung, die Sternspuren wachsen.
+         Dabei fährt der Blick wie auf einem Kran nach oben: nahe Ebenen sinken schneller als ferne. -->
+    <section class="hero" data-hero aria-labelledby="hero-title">
+      <div class="hero__stage">
+        <canvas class="hero__sky" data-sky aria-hidden="true"></canvas>
+        <div class="hero__scrim" aria-hidden="true"></div>
+        <!-- data-depth: Anteil der Bühnenhöhe, um den die Ebene am Ende der Kranfahrt gesunken ist. Die Pfade baut sky.js. -->
+        <div class="hero__land" aria-hidden="true">
+          <svg class="hero__layer hero__layer--far" data-land="far" data-depth="0.035" preserveAspectRatio="none">
+            <defs><linearGradient id="land-far" gradientUnits="userSpaceOnUse" x1="0" x2="0"><stop offset="0"/><stop offset="1"/></linearGradient></defs>
+            <path fill="url(#land-far)"/>
+          </svg>
+          <svg class="hero__layer hero__layer--mid" data-land="mid" data-depth="0.085" preserveAspectRatio="none">
+            <defs><linearGradient id="land-mid" gradientUnits="userSpaceOnUse" x1="0" x2="0"><stop offset="0"/><stop offset="1"/></linearGradient></defs>
+            <path fill="url(#land-mid)"/>
+          </svg>
+          <svg class="hero__layer hero__layer--near" data-land="near" data-depth="0.17" preserveAspectRatio="none">
+            <defs><linearGradient id="land-near" gradientUnits="userSpaceOnUse" x1="0" x2="0"><stop offset="0"/><stop offset="1"/></linearGradient></defs>
+            <path fill="url(#land-near)"/>
+          </svg>
+          <svg class="hero__layer hero__layer--fore" data-land="fore" data-depth="0.6" preserveAspectRatio="none">
+            <path class="hero__ground"/>
+            <g class="hero__cam" data-cam>
+              <path class="hero__legs" data-cam-legs/>
+              <path data-cam-body/>
+              <circle class="hero__led" data-cam-led r="1.1"/>
+            </g>
+          </svg>
+        </div>
+        <div class="hero__readout" aria-hidden="true">
+          <div><span>Belichtung</span><b data-exposure>00:00:00</b></div>
+          <div><span>Erddrehung</span><b data-rotation>0,0°</b></div>
+          <div class="hero__readout-extra"><span>Objektiv</span><b>14 mm · f/2.8 · ISO 800</b></div>
+        </div>
+        <div class="hero__copy wrap">
+          <p class="eyebrow" data-hero-line>Astrofotografie als Poster</p>
+          <h1 id="hero-title" class="hero__title">
+            <span class="line"><span data-hero-line>Licht, das lange</span></span>
+            <span class="line"><span data-hero-line>unterwegs war.</span></span>
+          </h1>
+          <p class="hero__lede" data-hero-line>Nebel, Galaxien und Sternhaufen, selbst fotografiert und als Fine-Art-Print gedruckt. Manches Licht darin hat 46 Millionen Jahre bis zu meiner Kamera gebraucht.</p>
+          <div class="hero__actions" data-hero-line>
+            <a class="btn btn--accent" href="#prints">Prints ansehen</a>
+            <span class="hero__hint" data-hero-hint>Scrollen verlängert die Belichtung</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shop -->
+    <section class="prints wrap" id="prints" aria-labelledby="prints-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Shop</p>
+          <h2 id="prints-title" class="section-title">Prints</h2>
+        </div>
+        <div class="filters" role="group" aria-label="Nach Motiv filtern" data-filters></div>
+      </div>
+      <ul class="grid" data-grid></ul>
+    </section>
+
+    <!-- Vom Bild zur Wand: scroll-gesteuerter Zoom -->
+    <section class="wall" id="druck" data-wall aria-labelledby="wall-title">
+      <div class="wall__stage">
+        <div class="wall__room" data-wall-room aria-hidden="true">
+          <svg class="wall__sofa" viewBox="0 0 400 150" preserveAspectRatio="xMidYMax meet" data-wall-sofa>
+            <path d="M28 60c0-14 10-22 24-22h296c14 0 24 8 24 22v14H28z"/>
+            <path d="M12 74c0-9 7-15 16-15s16 6 16 15v38h312V74c0-9 7-15 16-15s16 6 16 15v50c0 6-4 10-10 10H22c-6 0-10-4-10-10z"/>
+            <path d="M44 92h312"/>
+            <path d="M200 92v20"/>
+            <path d="M34 134v10M366 134v10"/>
+          </svg>
+          <div class="wall__floor"></div>
+        </div>
+        <div class="wall__slot" data-wall-slot aria-hidden="true"></div>
+        <figure class="wall__poster" data-wall-poster>
+          <div class="wall__img"><img src="img/prints/m45-plejaden.jpg" alt="Die Plejaden mit ihrem blauen Staubschleier" width="973" height="1460" loading="lazy" decoding="async"></div>
+          <figcaption class="wall__caption" data-wall-caption><span>Plejaden</span><span>80 × 120 cm</span></figcaption>
+        </figure>
+        <div class="wall__copy wrap">
+          <h2 id="wall-title" class="section-title wall__title" data-wall-item>Vom Okular an die Wand</h2>
+          <dl class="wall__points">
+            <div data-wall-item>
+              <dt>Fine-Art-Druck</dt>
+              <dd>Pigmenttinte auf mattem Papier. Tiefe Schwärzen, keine Spiegelungen, auch bei Tageslicht.</dd>
+            </div>
+            <div data-wall-item>
+              <dt>Bis 80 × 120 cm</dt>
+              <dd>Jedes Format behält das Seitenverhältnis der Aufnahme. Es wird nichts beschnitten.</dd>
+            </div>
+            <div data-wall-item>
+              <dt>Sicher verschickt</dt>
+              <dd>Papier kommt gerollt in einer stabilen Versandhülse, Alu und Acryl flach im Karton.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- Formate & Preise -->
+    <section class="formats wrap" id="formate" aria-labelledby="formats-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Formate</p>
+          <h2 id="formats-title" class="section-title">Größen und Preise</h2>
+        </div>
+        <p class="section-note">Gilt für jedes Motiv. Quer- und Hochformat kosten gleich viel.</p>
+      </div>
+      <div class="table-scroll">
+        <table class="prices" data-price-table></table>
+      </div>
+      <p class="fine" data-shipping-note></p>
+    </section>
+
+    <!-- Über mich -->
+    <section class="about wrap" id="ueber" aria-labelledby="about-title">
+      <div class="about__text">
+        <p class="eyebrow">Über mich</p>
+        <h2 id="about-title" class="section-title">Hinter dem Teleskop</h2>
+        <p>Ich fotografiere den Nachthimmel mit einem Seestar S30 Pro, einem kleinen Smart-Teleskop, in dem Montierung, Kamera und Filter in einem Gerät stecken. Für ein Bild sammelt es Licht aus vielen kurzen Einzelbelichtungen, je nach Objekt eine Viertelstunde bis fast eine halbe Stunde lang.</p>
+        <p>Die Einzelbilder werden übereinandergelegt, bis Strukturen sichtbar werden, die das Auge am Teleskop nie sehen würde: der blaue Staub um die Plejaden, das rote Wasserstoffleuchten im Kaliforniennebel.</p>
+        <p>Jeden Print prüfe ich vor dem Versand selbst.</p>
+      </div>
+      <dl class="gear">
+        <div><dt>Teleskop</dt><dd>Seestar S30 Pro</dd></div>
+        <div><dt>Bauart</dt><dd>Smart-Teleskop, alles in einem Gerät</dd></div>
+        <div><dt>Belichtung</dt><dd>14 bis 24 Minuten pro Bild</dd></div>
+      </dl>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq wrap" id="faq" aria-labelledby="faq-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Fragen</p>
+          <h2 id="faq-title" class="section-title">Gut zu wissen</h2>
+        </div>
+      </div>
+      <div class="faq__list">
+        <details>
+          <summary>Wie bezahle ich?</summary>
+          <div><p>Du schickst über den Warenkorb eine Bestellanfrage. Ich melde mich innerhalb von 24 Stunden mit den Zahlungsinfos (PayPal oder Überweisung). Sobald das Geld da ist, geht dein Print in den Druck. Vorher ist nichts verbindlich.</p></div>
+        </details>
+        <details>
+          <summary>Wie lange dauert die Lieferung?</summary>
+          <div><p>Papier-Prints sind meist nach 5 bis 7 Werktagen bei dir, Alu-Dibond und Acrylglas nach 8 bis 12 Werktagen. Ich verschicke nach Deutschland, Österreich und in die Schweiz.</p></div>
+        </details>
+        <details>
+          <summary>Sind die Bilder bearbeitet?</summary>
+          <div><p>Ja, das gehört bei Astrofotos dazu. Jedes Deep-Sky-Bild besteht aus vielen gestapelten Einzelbelichtungen, erst dadurch werden schwache Nebel und Staub sichtbar. Die Farben sind echt, aber verstärkt: Das Rot im Kaliforniennebel ist leuchtender Wasserstoff, den das Auge am Teleskop so nicht sehen würde.</p></div>
+        </details>
+        <details>
+          <summary>Gibt es ein Motiv auch in einem anderen Format?</summary>
+          <div><p>Schreib mir einfach. Quadratische Ausschnitte oder Panoramen sind bei vielen Motiven möglich, weil die Originaldaten größer sind als das, was du hier siehst.</p></div>
+        </details>
+        <details>
+          <summary>Kann ich zurückgeben?</summary>
+          <div><p>Du hast 14 Tage Widerrufsrecht ab Lieferung. Wenn ein Print beschädigt ankommt, schick mir ein Foto und du bekommst sofort Ersatz.</p></div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner wrap">
+      <div class="footer__brand">
+        <span class="nav__mark" aria-hidden="true"></span>
+        <span data-brand>Lichtjahr</span>
+      </div>
+      <p class="footer__contact">Fragen oder Wünsche: <a data-email-link href="mailto:bestellung@example.com"><span data-email>bestellung@example.com</span></a></p>
+      <nav class="footer__links" aria-label="Rechtliches">
+        <a href="rechtliches.html#impressum">Impressum</a>
+        <a href="rechtliches.html#datenschutz">Datenschutz</a>
+        <a href="rechtliches.html#widerruf">Widerruf</a>
+        <a data-instagram href="https://www.instagram.com/" rel="noopener">Instagram</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Detailansicht eines Prints -->
+  <dialog class="sheet" data-product aria-labelledby="product-title">
+    <div class="sheet__panel">
+      <p class="sr-only" role="status" aria-live="polite" data-sheet-status></p>
+      <button class="icon-btn sheet__close" type="button" data-close aria-label="Schließen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="product">
+        <div class="product__view">
+          <div class="tabs" role="tablist" aria-label="Ansicht">
+            <button type="button" role="tab" id="tab-motiv" aria-selected="true" aria-controls="view-motiv" data-tab="motiv">Motiv</button>
+            <button type="button" role="tab" id="tab-wand" aria-selected="false" aria-controls="view-wand" data-tab="wand">An der Wand</button>
+          </div>
+          <div class="product__pane" id="view-motiv" role="tabpanel" aria-labelledby="tab-motiv" data-pane="motiv">
+            <button class="zoom" type="button" data-zoom aria-pressed="false" aria-label="Bild vergrößern">
+              <img class="product__img" data-product-img alt="">
+            </button>
+          </div>
+          <div class="product__pane room" id="view-wand" role="tabpanel" aria-labelledby="tab-wand" data-pane="wand" hidden>
+            <div class="room__wall">
+              <div class="room__poster" data-room-poster><img data-room-img alt=""></div>
+              <svg class="room__sofa" viewBox="0 0 400 150" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+                <path d="M28 60c0-14 10-22 24-22h296c14 0 24 8 24 22v14H28z"/>
+                <path d="M12 74c0-9 7-15 16-15s16 6 16 15v38h312V74c0-9 7-15 16-15s16 6 16 15v50c0 6-4 10-10 10H22c-6 0-10-4-10-10z"/>
+                <path d="M44 92h312"/>
+                <path d="M200 92v20"/>
+                <path d="M34 134v10M366 134v10"/>
+              </svg>
+              <p class="room__scale">Sofa: 200 cm breit</p>
+            </div>
+          </div>
+          <div class="pager">
+            <button class="icon-btn" type="button" data-step-print="-1" aria-label="Vorheriger Print">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+            <span class="pager__count" data-pager-count aria-live="polite"></span>
+            <button class="icon-btn" type="button" data-step-print="1" aria-label="Nächster Print">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <form class="product__info" data-product-form>
+          <p class="eyebrow" data-product-eyebrow></p>
+          <h2 class="product__title" id="product-title" data-product-title></h2>
+          <p class="product__light" data-product-light></p>
+          <p class="product__text" data-product-text></p>
+          <dl class="specs" data-product-specs></dl>
+
+          <fieldset class="opts">
+            <legend>Format</legend>
+            <div class="opts__sizes" data-size-options></div>
+          </fieldset>
+          <fieldset class="opts">
+            <legend>Material</legend>
+            <div class="opts__materials" data-material-options></div>
+          </fieldset>
+
+          <div class="product__buy">
+            <div>
+              <p class="product__price" data-product-price></p>
+              <p class="fine" data-tax-note></p>
+            </div>
+            <button class="btn btn--accent" type="submit" data-add>In den Warenkorb</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Warenkorb -->
+  <dialog class="drawer" data-cart aria-labelledby="cart-title">
+    <div class="drawer__panel">
+      <p class="sr-only" role="status" aria-live="polite" data-drawer-status></p>
+      <div class="drawer__head">
+        <h2 id="cart-title" data-cart-title>Warenkorb</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Warenkorb schließen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="drawer__step" data-step="cart">
+        <ul class="cart-list" data-cart-list></ul>
+        <div class="cart-empty" data-cart-empty>
+          <span class="cart-empty__mark" aria-hidden="true"></span>
+          <p>Noch nichts drin. Such dir ein Motiv aus und wähl ein Format.</p>
+          <a class="btn btn--ghost" href="#prints" data-close>Zu den Prints</a>
+        </div>
+        <div class="drawer__foot" data-cart-foot>
+          <dl class="sum">
+            <div><dt>Zwischensumme</dt><dd data-subtotal></dd></div>
+            <div><dt>Versand</dt><dd data-shipping><span class="ship-val" data-ship-wrap><span data-ship-text></span><i class="strike" aria-hidden="true"></i></span></dd></div>
+            <div class="sum__total"><dt>Gesamt</dt><dd data-total></dd></div>
+          </dl>
+          <div class="meter" data-cart-meter aria-hidden="true">
+            <div class="meter__track"><div class="meter__trail"><span class="meter__head"></span></div></div>
+            <span class="meter__max" data-meter-max></span>
+          </div>
+          <p class="fine free-hint" data-free-hint></p>
+          <button class="btn btn--accent btn--block" type="button" data-to-checkout>Weiter zur Bestellung</button>
+        </div>
+      </div>
+
+      <form class="drawer__step checkout" data-step="checkout" data-checkout hidden novalidate>
+        <button class="link-btn" type="button" data-back>Zurück zum Warenkorb</button>
+        <p class="checkout__intro">Du schickst mir eine unverbindliche Anfrage. Ich melde mich innerhalb von 24 Stunden mit den Zahlungsinfos, erst dann ist die Bestellung fest.</p>
+        <div class="field">
+          <label for="f-name">Name</label>
+          <input id="f-name" name="name" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="f-email">E-Mail</label>
+          <input id="f-email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="f-street">Straße und Hausnummer</label>
+          <input id="f-street" name="street" autocomplete="street-address" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-zip">PLZ</label>
+            <input id="f-zip" name="zip" autocomplete="postal-code" inputmode="numeric" required>
+          </div>
+          <div class="field">
+            <label for="f-city">Ort</label>
+            <input id="f-city" name="city" autocomplete="address-level2" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-country">Land</label>
+          <select id="f-country" name="country" autocomplete="country-name">
+            <option>Deutschland</option>
+            <option>Österreich</option>
+            <option>Schweiz</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-note">Nachricht <span class="optional">optional</span></label>
+          <textarea id="f-note" name="note" rows="3"></textarea>
+        </div>
+        <label class="check">
+          <input id="f-legal" name="legal" type="checkbox" required>
+          <span>Ich habe die <a href="rechtliches.html#widerruf" target="_blank" rel="noopener">Widerrufsbelehrung</a> und den <a href="rechtliches.html#datenschutz" target="_blank" rel="noopener">Datenschutz</a> gelesen.</span>
+        </label>
+        <p class="form-error" data-form-error role="alert" hidden></p>
+        <div class="drawer__foot">
+          <dl class="sum"><div class="sum__total"><dt>Gesamt</dt><dd data-total-2></dd></div></dl>
+          <button class="btn btn--accent btn--block" type="submit" data-send>Bestellung anfragen</button>
+        </div>
+      </form>
+
+      <div class="drawer__step done" data-step="done" hidden>
+        <svg class="done__mark" viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="done__ring" cx="24" cy="24" r="20" pathLength="100"/>
+          <circle class="done__dot" cx="24" cy="24" r="2.5"/>
+        </svg>
+        <p class="eyebrow" data-done-eyebrow>Anfrage vorbereitet</p>
+        <h3 class="done__title" data-done-title tabindex="-1">Fast geschafft</h3>
+        <p data-done-text></p>
+        <pre class="done__order" data-done-order></pre>
+        <div class="done__actions">
+          <button class="btn btn--ghost" type="button" data-copy-order>Bestellung kopieren</button>
+          <button class="btn btn--accent" type="button" data-close>Fertig</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Flugebene für die Sternspur (liegt per Popover über offenen Dialogen) -->
+  <div class="fx" popover="manual" aria-hidden="true" data-fx></div>
+
+  <!-- Ankunftskarte unter dem Warenkorb-Button, rein visuell -->
+  <div class="arrival" data-arrival aria-hidden="true" hidden>
+    <div class="arrival__thumb" data-arrival-thumb><img alt="" data-arrival-img></div>
+    <div class="arrival__body" data-arrival-body>
+      <p class="arrival__eyebrow">Im Warenkorb</p>
+      <p class="arrival__title" data-arrival-title></p>
+      <p class="arrival__opts" data-arrival-opts></p>
+      <div class="meter" data-arrival-meter>
+        <div class="meter__track"><div class="meter__trail"><span class="meter__head"></span></div></div>
+      </div>
+      <p class="arrival__ship" data-arrival-ship></p>
+    </div>
+  </div>
+
+  <p class="sr-only" role="status" aria-live="polite" data-cart-status></p>
+  <div class="toast" data-toast popover="manual" aria-hidden="true"></div>
+
+  <script src="vendor/gsap.min.js" defer></script>
+  <script src="vendor/ScrollTrigger.min.js" defer></script>
+  <script src="vendor/Flip.min.js" defer></script>
+  <script src="vendor/CustomEase.min.js" defer></script>
+  <script src="js/config.js" defer></script>
+  <script src="js/sky.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
