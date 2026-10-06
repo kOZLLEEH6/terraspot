@@ -1,7 +1,7 @@
 /*
- * Hero-Himmel mit Parallax-Tiefe: Sterne rücken näher beim Scrollen.
- * Unterschiedliche Tiefenschichten bewegen sich mit verschiedenen Geschwindigkeiten.
- * app.js steuert depth (0-1) über die Scrollposition.
+ * Hero-Himmel: Sterne kreisen um den Himmelspol. `exposure` ist der Winkel in
+ * Radiant, den die Erde während der Belichtung gedreht hat (15° pro Stunde).
+ * app.js steuert exposure über die Scrollposition.
  */
 (function () {
   const canvas = document.querySelector("[data-sky]");
@@ -10,14 +10,14 @@
 
   const COLORS = ["#ffc79a", "#ffe2c2", "#fff6ec", "#e9efff", "#c9d7ff", "#aec3ff"];
   const sky = {
-    depth: 0,         /* scroll-basiert: 0 = Anfang, 1 = Max Tiefe */
-    spin: 0,          /* kontinuierliche Rotation für Bewegung */
+    exposure: 0.004,
+    spin: 0,
     running: true,
   };
 
   let W = 0, H = 0, DPR = 1;
   let pole = { x: 0, y: 0 };
-  let depthLayers = [];  /* Stars nach Tiefe organisiert */
+  let buckets = [];
   let heads = [];
   let ridge = null;
   let lastW = 0, lastH = 0;
@@ -60,26 +60,26 @@
     const count = Math.round(Math.min(1500, Math.max(380, (W * H) / 850)));
     const rand = rng(20261005);
 
-    /* Sterne in 4 Tiefenschichten organisieren */
-    depthLayers = [[], [], [], []];
+    // Sterne nach Farbe und Helligkeit gruppieren: ein stroke() pro Gruppe
+    buckets = [];
+    for (let c = 0; c < COLORS.length; c++) {
+      for (let b = 0; b < 3; b++) buckets.push({ color: COLORS[c], level: b, stars: [] });
+    }
     heads = [];
     for (let i = 0; i < count; i++) {
       const r = Math.sqrt(rand()) * rMax;
       const a = rand() * Math.PI * 2;
-      const depthVal = rand();  /* 0-1 Tiefe pro Stern */
       const m = rand();
       const level = m > 0.97 ? 2 : m > 0.8 ? 1 : 0;
-      const tempIdx = Math.min(COLORS.length - 1, Math.floor(Math.pow(rand(), 0.8) * COLORS.length));
-      const star = { r, a, depth: depthVal, colorIdx: tempIdx, level };
-      const depthLayer = Math.floor(depthVal * 4);
-      depthLayers[depthLayer].push(star);
-      if (level === 2) heads.push({ star, color: COLORS[tempIdx] });
+      const temp = Math.min(COLORS.length - 1, Math.floor(Math.pow(rand(), 0.8) * COLORS.length));
+      const star = { r, a };
+      buckets[temp * 3 + level].stars.push(star);
+      if (level === 2) heads.push({ star, color: COLORS[temp] });
     }
-
-    /* Polaris: nah, hell */
-    const polaris = { r: Math.min(W, H) * 0.012, a: 0.6, depth: 0.05, colorIdx: 2, level: 2 };
-    depthLayers[0].push(polaris);
-    heads.push({ star: polaris, color: COLORS[2], big: true });
+    // Polaris: fast im Pol, hell
+    const polaris = { r: Math.min(W, H) * 0.012, a: 0.6 };
+    buckets[2 * 3 + 2].stars.push(polaris);
+    heads.push({ star: polaris, color: "#fff6ec", big: true });
 
     ridge = makeRidge(rand);
   }
@@ -110,78 +110,47 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.globalCompositeOperation = "source-over";
 
-    /* Himmelsfarbe: Je tiefer, desto heller/wärmer */
-    const skyBright = 0.04 + sky.depth * 0.08;
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, `rgba(4, 6, 12, ${1 - sky.depth * 0.3})`);
-    g.addColorStop(0.62, `rgba(8, 16, 32, ${1 - sky.depth * 0.2})`);
-    g.addColorStop(0.9, `rgba(15, 26, 46, ${1 - sky.depth * 0.15})`);
+    g.addColorStop(0, "#04060c");
+    g.addColorStop(0.62, "#081020");
+    g.addColorStop(0.9, "#0f1a2e");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    /* Glow am Horizont: intensiver bei Tiefe */
-    const glowOpacity = 0.22 + sky.depth * 0.38;
+    // leichtes Restlicht am Horizont
     const glow = ctx.createRadialGradient(W * 0.18, H * 0.92, 0, W * 0.18, H * 0.92, Math.max(W, H) * 0.55);
-    glow.addColorStop(0, `rgba(120, 82, 54, ${glowOpacity})`);
+    glow.addColorStop(0, "rgba(120, 82, 54, 0.22)");
     glow.addColorStop(1, "rgba(120, 82, 54, 0)");
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, H);
 
     ctx.globalCompositeOperation = "lighter";
     ctx.lineCap = "round";
+    const exp = Math.max(sky.exposure, 0.0015);
     const spin = sky.spin;
 
-    /* Sterne pro Tiefenschicht rendern: ferner zuerst, näher zuletzt */
-    for (let layerIdx = 0; layerIdx < depthLayers.length; layerIdx++) {
-      const layer = depthLayers[layerIdx];
-      if (!layer.length) continue;
-
-      /* Tiefe-Interpolation: Wie nah ist dieser Layer basierend auf Scrollprogress? */
-      const layerDepth = (layerIdx / 4 + 0.125) * 0.8;  /* 0.1 bis 0.8 */
-      const depthMix = Math.max(0, sky.depth - layerDepth) * 1.5;  /* 0 = sichtbar, 1+ = kommt näher */
-
-      /* Skalierung: ferne Sterne sind klein, nahe groß */
-      const scale = 1 + depthMix * 2.5;
-      /* Opazität: ferne Sterne fadden aus, nahe sind sichtbar */
-      const opacityMult = Math.min(1, 0.3 + depthMix * 1.2);
-
-      /* Gruppierung nach Farbe+Level für Rendering-Effizienz */
-      const starsByGroup = new Map();
-      for (const star of layer) {
-        const key = `${star.colorIdx}-${star.level}`;
-        if (!starsByGroup.has(key)) starsByGroup.set(key, []);
-        starsByGroup.get(key).push(star);
+    for (const b of buckets) {
+      if (!b.stars.length) continue;
+      ctx.strokeStyle = b.color;
+      ctx.globalAlpha = ALPHA[b.level];
+      ctx.lineWidth = LINE[b.level];
+      ctx.beginPath();
+      for (const s of b.stars) {
+        // Kopf = aktuelle Position, die Spur reicht zurück, wo der Stern vorher stand
+        const a0 = s.a - spin;
+        ctx.moveTo(pole.x + s.r * Math.cos(a0), pole.y + s.r * Math.sin(a0));
+        ctx.arc(pole.x, pole.y, s.r, a0, a0 + exp);
       }
-
-      for (const [key, stars] of starsByGroup) {
-        const [colorIdx, level] = key.split('-');
-        ctx.strokeStyle = COLORS[parseInt(colorIdx)];
-        ctx.globalAlpha = ALPHA[parseInt(level)] * opacityMult;
-        ctx.lineWidth = LINE[parseInt(level)] * scale;
-
-        /* Kleine Trails für ferne Sterne, große für nahe */
-        const trailExp = 0.008 + sky.depth * 0.06;
-
-        ctx.beginPath();
-        for (const s of stars) {
-          const a0 = s.a - spin * (1 - s.depth);  /* ferne Sterne drehen langsamer */
-          ctx.moveTo(pole.x + s.r * Math.cos(a0), pole.y + s.r * Math.sin(a0));
-          ctx.arc(pole.x, pole.y, s.r, a0, a0 + trailExp);
-        }
-        ctx.stroke();
-      }
+      ctx.stroke();
     }
 
-    /* helle Sterne bekommen einen kleinen Glanzpunkt am Kopf */
-    ctx.globalAlpha = 0.55 + sky.depth * 0.3;
+    // helle Sterne bekommen einen kleinen Glanzpunkt am Kopf
+    ctx.globalAlpha = 0.55;
     for (const h of heads) {
-      const starDepth = h.star.depth;
-      const depthMix = Math.max(0, sky.depth - (starDepth * 0.8)) * 1.5;
-      const scale = 1 + depthMix * 2.5;
-      const a0 = h.star.a - spin * (1 - starDepth);
+      const a0 = h.star.a - spin;
       const x = pole.x + h.star.r * Math.cos(a0);
       const y = pole.y + h.star.r * Math.sin(a0);
-      const rad = (h.big ? 7 : 4) * scale;
+      const rad = h.big ? 7 : 4;
       ctx.drawImage(sprites[h.color], x - rad, y - rad, rad * 2, rad * 2);
     }
 

@@ -1,17 +1,16 @@
 /* Layout: Nachthimmel als durchgehender Grund; die Prints hängen wie Poster an einer dunklen Wand.
-   Primärakzent: K-Stern (~4.500 K), sekundär: kühle Blauakzente */
+   Ein Akzent: die Farbe eines K-Sterns (~4.500 K), sonst nur Blauschwarz, Staubgrau und Papierweiß. */
 :root {
-  --night: #050709;      /* Seitengrund, tieferes Schwarz */
-  --night-2: #0d1119;    /* Flächen: Dialoge, Warenkorb */
-  --wall: #12161f;       /* "Wand" hinter den Postern */
-  --line: #1d2537;       /* Haarlinien */
-  --star: #e8ecf4;       /* Text, leicht kühler */
-  --haze: #a8afc5;       /* Fließtext zweite Ebene */
-  --dust: #717f99;       /* Labels, Metadaten */
+  --night: #070a12;      /* Seitengrund, blaustichiges Schwarz */
+  --night-2: #0e1320;    /* Flächen: Dialoge, Warenkorb */
+  --wall: #141a28;       /* "Wand" hinter den Postern */
+  --line: #1f2739;       /* Haarlinien */
+  --star: #e9edf5;       /* Text */
+  --haze: #aeb6c8;       /* Fließtext zweite Ebene */
+  --dust: #7d879d;       /* Labels, Metadaten */
   --paper: #f3f1ec;      /* Papier der Prints */
-  --k-star: #f5b984;     /* Primärakzent: K-Stern ~4.500 K */
-  --blue-accent: #5b8dd4;/* Sekundärakzent: kühles Blau */
-  --ink: #0f1218;        /* Text auf Papier */
+  --k-star: #f5b984;     /* Akzent: Sternfarbe ~4.500 K */
+  --ink: #10131a;        /* Text auf Papier und Akzent */
 
   --font-display: "Jost", "Futura", "Century Gothic", "Avenir Next", sans-serif;
   --font-body: "Instrument Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
@@ -142,23 +141,12 @@ button { cursor: pointer; }
   transition: transform 160ms var(--ease-out), background-color 200ms ease, border-color 200ms ease, color 200ms ease;
 }
 .btn:active { transform: scale(0.97); }
-.btn--accent {
-  background: var(--k-star);
-  color: var(--ink);
-  box-shadow: 0 4px 12px rgba(245, 185, 132, 0.12);
-  transition: transform 160ms var(--ease-out), background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
-}
+.btn--accent { background: var(--k-star); color: var(--ink); }
 .btn--ghost { background: transparent; border-color: var(--line); color: var(--star); }
 .btn--block { width: 100%; }
 @media (hover: hover) {
-  .btn--accent:hover {
-    background: #ffcfa3;
-    box-shadow: 0 6px 16px rgba(245, 185, 132, 0.18);
-  }
-  .btn--ghost:hover {
-    border-color: var(--dust);
-    background: rgba(91, 141, 212, 0.04);
-  }
+  .btn--accent:hover { background: #ffcfa3; }
+  .btn--ghost:hover { border-color: var(--dust); }
 }
 .btn[disabled] { opacity: 0.5; pointer-events: none; }
 
@@ -170,18 +158,11 @@ button { cursor: pointer; }
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--night-2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  transition: transform 160ms var(--ease-out), border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+  transition: transform 160ms var(--ease-out), border-color 200ms ease;
 }
 .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
 .icon-btn:active { transform: scale(0.94); }
-@media (hover: hover) {
-  .icon-btn:hover {
-    border-color: var(--blue-accent);
-    background: rgba(91, 141, 212, 0.08);
-    box-shadow: 0 4px 10px rgba(91, 141, 212, 0.12);
-  }
-}
+@media (hover: hover) { .icon-btn:hover { border-color: var(--dust); } }
 
 .link-btn {
   padding: 0;
@@ -439,12 +420,11 @@ a.nav__cart { padding-right: 16px; }
   gap: 8px;
   min-width: 230px;
   padding: 16px 18px;
-  border: 1px solid rgba(91, 141, 212, 0.12);
+  border: 1px solid var(--line);
   border-radius: 3px;
-  background: rgb(5 7 9 / 0.65);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: rgb(7 10 18 / 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -452,8 +432,7 @@ a.nav__cart { padding-right: 16px; }
 .hero__readout div { display: flex; justify-content: space-between; gap: 24px; }
 .hero__readout span { color: var(--dust); text-transform: uppercase; letter-spacing: 0.1em; }
 .hero__readout b { font-weight: 500; color: var(--star); }
-.hero__readout [data-exposure] { color: var(--blue-accent); font-weight: 600; }
-.hero__readout [data-rotation] { color: var(--k-star); }
+.hero__readout [data-exposure] { color: var(--k-star); }
 
 @media (max-width: 900px) {
   .hero__readout {
@@ -535,12 +514,8 @@ a.nav__cart { padding-right: 16px; }
   container-type: inline-size;
   background: var(--paper);
   padding: 4.5% 4.5% 11%;
-  border: 1px solid rgba(91, 141, 212, 0.08);
-  box-shadow:
-    0 22px 40px -18px rgb(0 0 0 / 0.88),
-    0 6px 18px rgb(91 141 212 / 0.08),
-    0 1px 2px rgb(0 0 0 / 0.5);
-  transition: transform 600ms var(--ease-out), box-shadow 600ms var(--ease-out), border-color 600ms var(--ease-out);
+  box-shadow: 0 22px 40px -18px rgb(0 0 0 / 0.85), 0 3px 8px rgb(0 0 0 / 0.35);
+  transition: transform 600ms var(--ease-out), box-shadow 600ms var(--ease-out);
 }
 .tile__poster.is-portrait { width: 52%; }
 .tile__poster.is-landscape { width: 78%; }
@@ -576,11 +551,7 @@ a.nav__cart { padding-right: 16px; }
 @media (hover: hover) {
   .tile__hit:hover .tile__poster {
     transform: translateY(-8px);
-    border-color: rgba(91, 141, 212, 0.18);
-    box-shadow:
-      0 40px 60px -22px rgb(0 0 0 / 0.92),
-      0 12px 28px rgb(91 141 212 / 0.15),
-      0 2px 4px rgb(0 0 0 / 0.5);
+    box-shadow: 0 40px 60px -22px rgb(0 0 0 / 0.9), 0 6px 14px rgb(0 0 0 / 0.35);
   }
 }
 .tile__hit:active .tile__poster { transform: translateY(-2px) scale(0.99); transition-duration: 160ms; }
