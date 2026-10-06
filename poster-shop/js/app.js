@@ -1544,7 +1544,7 @@
   // Bilder können die Höhe ändern: danach die Trigger neu vermessen
   window.addEventListener("load", () => { if (ScrollTrigger) ScrollTrigger.refresh(); });
 
-  // Prints per Link öffnen, z. B. index.html#print-m42-orionnebel
+  // Prints per Link öffnen, z. B. index.html#print-m45-plejaden
   const deep = location.hash.match(/^#print-(.+)$/);
   if (deep && printById(deep[1])) openPrint(deep[1], { history: "replace" });
 })();

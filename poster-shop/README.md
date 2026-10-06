@@ -3,9 +3,11 @@
 Statische Website ohne Build-Schritt: HTML, CSS und ein bisschen JavaScript. Läuft auf jedem
 Webspace, GitHub Pages, Netlify oder Cloudflare Pages.
 
-> **Wichtig:** Die zwölf Bilder in `img/prints/` sind am Computer erzeugte Platzhalter, keine
-> echten Fotos. Auch Aufnahmedaten, Ausrüstung und der Text unter „Über mich“ sind Beispiele.
-> Bevor du irgendwas verkaufst, kommen da deine eigenen Bilder und Daten rein.
+> **Wichtig:** Die Bilder in `img/prints/` sind eigene Aufnahmen mit dem Seestar S30 Pro,
+> zugeschnitten aus den Bildern, die die Seestar-App teilt (1080 × 1920 Pixel, ohne die Leiste
+> unten). Für die Website reicht das, für Drucke nicht: Zum Drucken die Originale in voller
+> Auflösung aus der App exportieren. Der Text unter „Über mich“ ist ein Vorschlag, den du in
+> deine eigenen Worte bringen solltest.
 
 ## Lokal ansehen
 
@@ -51,7 +53,7 @@ Dann `http://localhost:3000` (bzw. `:8000`) öffnen.
    Formate pro Seitenverhältnis ein.
 
 Das Bild in der Scroll-Sequenz „Vom Okular an die Wand“ ist in `index.html` fest eingetragen
-(`milchstrasse-zentrum.jpg`), dort einfach den Dateinamen tauschen.
+(`m45-plejaden.jpg`), dort einfach den Dateinamen tauschen.
 
 ## Wie Bestellungen gerade funktionieren
 
@@ -104,7 +106,7 @@ Das ist kein Rechtsrat, aber diese Punkte solltest du geklärt haben:
 - Wer im Betriebssystem „Bewegung reduzieren“ eingestellt hat, bekommt eine ruhige Version
   ohne Scroll-Effekte.
 - Der Warenkorb liegt im `localStorage` des Browsers, es gibt keine Cookies.
-- Jeder geöffnete Print hat einen eigenen Link (z. B. `index.html#print-m42-orionnebel`), den man
+- Jeder geöffnete Print hat einen eigenen Link (z. B. `index.html#print-m45-plejaden`), den man
   teilen kann. Die Zurück-Taste am Handy schließt die Detailansicht.
 - In der Detailansicht blättert man mit Pfeiltasten, Wischen oder den Pfeilen unten rechts.
   Ein Klick aufs Bild zoomt in die volle Auflösung (Maus bewegen bzw. Finger ziehen zum Verschieben).
